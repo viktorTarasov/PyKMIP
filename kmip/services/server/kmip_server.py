@@ -53,6 +53,7 @@ class KMIPServer(object):
         self.socket.listen(0)
         while True:
             connection, address = self.socket.accept()
+            self.logger.info('New connection')
             connection = ssl.wrap_socket(
                 connection,
                 keyfile=self.keyfile,
@@ -70,9 +71,13 @@ class KMIPServer(object):
             try:
                 while True:
                     self._processor.process(protocol, protocol)
+            except EOFError as e:
+                pass
             except Exception as e:
                 self.logger.error('KMIPServer {0} {1}'.format(type(e), e))
-                connection.close()
+
+            connection.close()
+            self.logger.info('Connection closed')
 
     def _set_variables(self, host, port, keyfile, certfile, cert_reqs,
                        ssl_version, ca_certs, do_handshake_on_connect,

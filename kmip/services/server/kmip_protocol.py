@@ -53,9 +53,12 @@ class KMIPProtocol(object):
                 break
             bytes_read += len(msg)
             total_msg += msg
-        if bytes_read != total_bytes_to_be_read:
+        if bytes_read == 0:
+            raise EOFError
+        elif bytes_read != total_bytes_to_be_read:
             raise Exception("Expected {0} bytes, Received {1} bytes"
                             .format(total_bytes_to_be_read, bytes_read))
+
         return total_msg
 
 
