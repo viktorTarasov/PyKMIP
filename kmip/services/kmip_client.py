@@ -227,6 +227,14 @@ class KMIPProxy(KMIP):
         raise e
 
     def _create_socket(self, sock):
+        self.logger.info("Host {0}".format(self.host))
+        if self.keyfile != None:
+            self.logger.info("Key file " + self.keyfile)
+        else:
+            self.logger.info("Key file None")
+        self.logger.info("Cert file {0}".format(self.certfile))
+        self.logger.info("SSL version {0}".format(self.ssl_version))
+        self.logger.info("CA certs {0}".format(self.ca_certs))
         self.socket = ssl.wrap_socket(
             sock,
             keyfile=self.keyfile,
