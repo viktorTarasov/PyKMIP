@@ -16,6 +16,7 @@
 import logging
 import os
 import sys
+import re
 
 from six.moves import xrange
 
@@ -45,20 +46,22 @@ if __name__ == '__main__':
     logging.config.fileConfig(f_log)
     logger = logging.getLogger(__name__)
 
+    query_functions_map = {
+        'OPERATIONS' :          QueryFunctionEnum.QUERY_OPERATIONS,
+        'OBJECTS' :             QueryFunctionEnum.QUERY_OBJECTS,
+        'SERVER_INFORMATION' :  QueryFunctionEnum.QUERY_SERVER_INFORMATION,
+        'APPLICATION_NAMESPACES' : QueryFunctionEnum.QUERY_APPLICATION_NAMESPACES,
+        'EXTENSION_LIST' :      QueryFunctionEnum.QUERY_EXTENSION_LIST,
+        'EXTENSION_MAP' :       QueryFunctionEnum.QUERY_EXTENSION_MAP,
+    }
     # Build query function list.
     query_functions = list()
-    query_functions.append(
-        QueryFunction(QueryFunctionEnum.QUERY_OPERATIONS))
-    query_functions.append(
-        QueryFunction(QueryFunctionEnum.QUERY_OBJECTS))
-    query_functions.append(
-        QueryFunction(QueryFunctionEnum.QUERY_SERVER_INFORMATION))
-    query_functions.append(
-        QueryFunction(QueryFunctionEnum.QUERY_APPLICATION_NAMESPACES))
-    query_functions.append(
-        QueryFunction(QueryFunctionEnum.QUERY_EXTENSION_LIST))
-    query_functions.append(
-        QueryFunction(QueryFunctionEnum.QUERY_EXTENSION_MAP))
+    if opts.query_functions:
+        for query in re.split(',| ', opts.query_functions) :
+            query_functions.append(QueryFunction(query_functions_map[query]))
+    else:
+        for query in query_functions_map:
+            query_functions.append(QueryFunction(query_functions_map[query]))
 
     # Build the client and connect to the server
     client = KMIPProxy(config=config)

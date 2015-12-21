@@ -20,12 +20,17 @@ from kmip.core.attributes import CryptographicLength
 from kmip.core.attributes import CryptographicAlgorithm
 from kmip.core.attributes import ObjectType
 from kmip.core.attributes import UniqueIdentifier
+
 from kmip.core.enums import AttributeType as AT
 from kmip.core.enums import CryptographicAlgorithm as CA
 from kmip.core.enums import KeyFormatType as KeyFormatTypeEnum
 from kmip.core.enums import ObjectType as OT
 from kmip.core.enums import ResultReason as ResultReasonEnum
 from kmip.core.enums import ResultStatus as RS
+from kmip.core.enums import ObjectType as ObjectTypeEnum
+from kmip.core.enums import Operation as OperationEnum
+from kmip.core.enums import QueryFunction as QueryFunctionEnum
+
 from kmip.core.factories.attributes import AttributeFactory
 from kmip.core.factories.keys import KeyFactory
 from kmip.core.factories.secrets import SecretFactory
@@ -34,14 +39,18 @@ from kmip.core.messages.contents import ResultStatus
 from kmip.core.messages.contents import ResultReason
 from kmip.core.messages.contents import ResultMessage
 from kmip.core.messages.contents import ProtocolVersion
+from kmip.core.messages.contents import Operation
 
 from kmip.core.misc import KeyFormatType
+#from kmip.core.misc import VendorIdentification
+from kmip.core.misc import ServerInformation
 
 from kmip.core.objects import KeyBlock
 from kmip.core.objects import KeyMaterial
 from kmip.core.objects import KeyValue
 from kmip.core.objects import TemplateAttribute
 from kmip.core.secrets import SymmetricKey
+
 from kmip.services.server.repo.mem_repo import MemRepo
 from kmip.services.results import CreateResult
 from kmip.services.results import DestroyResult
@@ -50,6 +59,7 @@ from kmip.services.results import OperationResult
 from kmip.services.results import RegisterResult
 from kmip.services.results import LocateResult
 from kmip.services.results import DiscoverVersionsResult
+from kmip.services.results import QueryResult
 
 
 class KMIP(object):
@@ -90,7 +100,7 @@ class KMIP(object):
 
 class KMIPImpl(KMIP):
 
-    def __init__(self):
+    def __init__(self, server_information=None):
         super(KMIPImpl, self).__init__()
         self.logger = logging.getLogger(__name__)
         self.key_factory = KeyFactory()
@@ -101,6 +111,44 @@ class KMIPImpl(KMIP):
                 ProtocolVersion.create(1, 1),
                 ProtocolVersion.create(1, 0)
         ]
+        self.operations = [
+            Operation(OperationEnum.CREATE),
+            Operation(OperationEnum.CREATE_KEY_PAIR),
+            Operation(OperationEnum.REGISTER),
+            Operation(OperationEnum.REKEY),
+            Operation(OperationEnum.CERTIFY),
+            Operation(OperationEnum.RECERTIFY),
+            Operation(OperationEnum.LOCATE),
+            Operation(OperationEnum.CHECK),
+            Operation(OperationEnum.GET),
+            Operation(OperationEnum.GET_ATTRIBUTES),
+            Operation(OperationEnum.GET_ATTRIBUTE_LIST),
+            Operation(OperationEnum.ADD_ATTRIBUTE),
+            Operation(OperationEnum.MODIFY_ATTRIBUTE),
+            Operation(OperationEnum.DELETE_ATTRIBUTE),
+            Operation(OperationEnum.OBTAIN_LEASE),
+            Operation(OperationEnum.GET_USAGE_ALLOCATION),
+            Operation(OperationEnum.ACTIVATE),
+            Operation(OperationEnum.REVOKE),
+            Operation(OperationEnum.DESTROY),
+            Operation(OperationEnum.ARCHIVE),
+            Operation(OperationEnum.RECOVER),
+            Operation(OperationEnum.QUERY),
+            Operation(OperationEnum.CANCEL),
+            Operation(OperationEnum.POLL),
+            Operation(OperationEnum.REKEY_KEY_PAIR),
+            Operation(OperationEnum.DISCOVER_VERSIONS),
+        ]
+        self.object_types = [
+            ObjectType(ObjectTypeEnum.CERTIFICATE),
+            ObjectType(ObjectTypeEnum.SYMMETRIC_KEY),
+            ObjectType(ObjectTypeEnum.PUBLIC_KEY),
+            ObjectType(ObjectTypeEnum.PRIVATE_KEY),
+            ObjectType(ObjectTypeEnum.TEMPLATE),
+            ObjectType(ObjectTypeEnum.SECRET_DATA),
+        ]
+
+        self.server_information = ServerInformation(server_information)
 
     def create(self, object_type, template_attribute, credential=None):
         self.logger.debug('create() called')
@@ -310,6 +358,37 @@ class KMIPImpl(KMIP):
             return DiscoverVersionsResult(ResultStatus(RS.OPERATION_FAILED),
                                           result_reason=reason,
                                           result_message=msg)
+
+    def query(self, query_functions=None):
+        self.logger.warning("query(query_functions={0}) called".format(query_functions))
+        msg = 'query server capabilities'
+
+        query_result_args = {}
+        if query_functions:
+            for query in query_functions:
+                print ("Query: {0}".format(query))
+                if query.value == QueryFunctionEnum.QUERY_OPERATIONS :
+                    query_result_args['operations'] = self.operations
+                elif query.value == QueryFunctionEnum.QUERY_OBJECTS:
+                    query_result_args['object_types'] = self.object_types
+                elif query.value == QueryFunctionEnum.QUERY_SERVER_INFORMATION:
+                    if self.server_information != None:
+                        query_result_args['server_information'] = self.server_information
+                elif query.value == QueryFunctionEnum.QUERY_APPLICATION_NAMESPACES:
+                    pass
+                elif query.value == QueryFunctionEnum.QUERY_EXTENSION_LIST:
+                    pass
+                elif query.value == QueryFunctionEnum.QUERY_EXTENSION_MAP:
+                    pass
+
+        self.logger.debug(msg)
+        try:
+            return QueryResult(ResultStatus(RS.SUCCESS),**query_result_args)
+        except NotImplementedError:
+            msg = ResultMessage('Query Operation Not Supported')
+            reason = ResultReason(ResultReasonEnum.OPERATION_NOT_SUPPORTED)
+            return QueryResult(ResultStatus(RS.OPERATION_FAILED),
+                    result_reason=reason, result_message=msg)
 
     def _validate_req_field(self, attrs, name, expected, msg, required=True):
         self.logger.debug('Validating attribute %s' % name)

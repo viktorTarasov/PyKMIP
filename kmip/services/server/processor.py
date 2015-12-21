@@ -35,6 +35,7 @@ from kmip.core.messages.payloads.register import RegisterResponsePayload
 from kmip.core.messages.payloads.locate import LocateResponsePayload
 from kmip.core.messages.payloads.discover_versions import \
     DiscoverVersionsResponsePayload
+from kmip.core.messages.payloads.query import QueryResponsePayload
 
 from kmip.core.enums import Operation
 from kmip.core.enums import ResultStatus as RS
@@ -177,6 +178,8 @@ class Processor(object):
             return self._process_locate_request(payload)
         elif op is Operation.DISCOVER_VERSIONS:
             return self._process_discover_versions_request(payload)
+        elif op is Operation.QUERY:
+            return self._process_query_request(payload)
         else:
             self.logger.debug("Process operation: Not implemented")
             raise NotImplementedError()
@@ -295,5 +298,27 @@ class Processor(object):
 
         resp_pl = DiscoverVersionsResponsePayload(
                 protocol_versions=result_protocol_versions)
+
+        return (result_status, result_reason, result_message, resp_pl)
+
+    def _process_query_request(self, payload):
+        query_functions = payload.query_functions
+
+        result = self._handler.query(query_functions=query_functions)
+
+        result_status = result.result_status
+        result_reason = result.result_reason
+        result_message = result.result_message
+
+        response_payload_args = {
+            'operations'            : result.operations,
+            'object_types'          : result.object_types,
+            'vendor_identification' : result.vendor_identification,
+            'server_information'    : result.server_information,
+            'application_namespaces' : result.application_namespaces,
+            'extension_information' : result.extension_information
+        }
+
+        resp_pl = QueryResponsePayload(**response_payload_args)
 
         return (result_status, result_reason, result_message, resp_pl)

@@ -209,6 +209,17 @@ def build_cli_parser(operation=None):
                 dest="protocol_versions",
                 help=("Protocol versions supported by client. "
                       "ex. '1.1,1.2 1.3'"))
+    elif operation is Operation.QUERY:
+        parser.add_option(
+                "-q",
+                "--query-functions",
+                action="store",
+                type="str",
+                default=None,
+                dest="query_functions",
+                help=("Request query functions. Query functions include: "
+                      "OPERATIONS, OBJECT, SERVER_INFORMATION, "
+                      "APPLICATION_NAMESPACES, EXTENSION_LIST EXTENSION_MAP"))
 
     return parser
 
