@@ -489,6 +489,8 @@ def log_secret(logger, secret_type, secret_value):
         log_private_key(logger, secret_value)
     elif secret_type is ObjectType.PUBLIC_KEY:
         log_public_key(logger, secret_value)
+    elif secret_type is ObjectType.SYMMETRIC_KEY:
+        log_symmetric_key(logger, secret_value)
     else:
         logger.info('generic secret: {0}'.format(secret_value))
 
@@ -509,6 +511,12 @@ def log_public_key(logger, public_key):
 
 def log_private_key(logger, private_key):
     key_block = private_key.key_block
+
+    log_key_block(logger, key_block)
+
+
+def log_symmetric_key(logger, skey):
+    key_block = skey.key_block
 
     log_key_block(logger, key_block)
 
@@ -545,7 +553,7 @@ def log_key_value(logger, key_value):
         key_material = key_value.key_material
         attributes = key_value.attributes
 
-        logger.info('key material: {0}'.format(repr(key_material)))
+        logger.info('key material: {0}'.format(''.join('{:02x}'.format(x) for x in key_material.value)))
 
         log_attribute_list(logger, attributes)
     else:
