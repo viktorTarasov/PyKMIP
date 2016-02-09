@@ -187,6 +187,9 @@ class KMIPImpl(KMIP):
         else:
             bit_length = len_attr.attribute_value.value
 
+        fresh_attribute = self.attribute_factory.create_attribute(AT.FRESH, True)
+        attributes.append(fresh_attribute)
+
         key = self._gen_symmetric_key(bit_length, crypto_alg)
         s_uuid, uuid_attribute = self._save(key, attributes)
         ret_attributes.append(uuid_attribute)
