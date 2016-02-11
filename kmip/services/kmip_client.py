@@ -482,6 +482,33 @@ class KMIPProxy(KMIP):
             operation=operation, request_payload=payload)
         return batch_item
 
+    def _build_locate_batch_item(self,
+            maximum_items=None, storage_status_mask=None,
+            object_group_member=None, attributes=[]):
+        operation = Operation(OperationEnum.LOCATE)
+
+        mxi = None
+        ssmask = None
+        objgrp = None
+
+        if maximum_items is not None:
+            mxi = locate.LocateRequestPayload.MaximumItems(maximum_items)
+        if storage_status_mask is not None:
+            m = storage_status_mask
+            ssmask = locate.LocateRequestPayload.StorageStatusMask(m)
+        if object_group_member is not None:
+            o = object_group_member
+            objgrp = locate.LocateRequestPayload.ObjectGroupMember(o)
+
+        payload = locate.LocateRequestPayload(maximum_items=mxi,
+                                              storage_status_mask=ssmask,
+                                              object_group_member=objgrp,
+                                              attributes=attributes)
+
+        batch_item = messages.RequestBatchItem(operation=operation,
+                                               request_payload=payload)
+        return batch_item
+
     def _process_batch_items(self, response):
         results = []
         for batch_item in response.batch_items:
@@ -791,28 +818,11 @@ class KMIPProxy(KMIP):
     def _locate(self, maximum_items=None, storage_status_mask=None,
                 object_group_member=None, attributes=[], credential=None):
 
-        operation = Operation(OperationEnum.LOCATE)
-
-        mxi = None
-        ssmask = None
-        objgrp = None
-
-        if maximum_items is not None:
-            mxi = locate.LocateRequestPayload.MaximumItems(maximum_items)
-        if storage_status_mask is not None:
-            m = storage_status_mask
-            ssmask = locate.LocateRequestPayload.StorageStatusMask(m)
-        if object_group_member is not None:
-            o = object_group_member
-            objgrp = locate.LocateRequestPayload.ObjectGroupMember(o)
-
-        payload = locate.LocateRequestPayload(maximum_items=mxi,
-                                              storage_status_mask=ssmask,
-                                              object_group_member=objgrp,
-                                              attributes=attributes)
-
-        batch_item = messages.RequestBatchItem(operation=operation,
-                                               request_payload=payload)
+        batch_item = self._build_locate_batch_item(
+                maximum_items=maximum_items,
+                storage_status_mask=storage_status_mask,
+                object_group_member=object_group_member,
+                attributes=attributes)
 
         message = self._build_request_message(credential, [batch_item])
         self._send_message(message)
