@@ -19,6 +19,7 @@ from kmip.core.enums import Operation
 from kmip.core.enums import ResultStatus
 from kmip.core.enums import ObjectGroupMember
 from kmip.core.enums import StorageStatusMask
+from kmip.core.enums import AttributeType
 
 from kmip.core.attributes import Name
 
@@ -74,14 +75,9 @@ if __name__ == '__main__':
         credential = credential_factory.create_credential(credential_type,
                                                           credential_value)
     # Build name attribute
-    # TODO (peter-hamilton) Push this into the AttributeFactory
-    attribute_name = Attribute.AttributeName('Name')
-    name_value = Name.NameValue(name)
-    name_type = Name.NameType(NameType.UNINTERPRETED_TEXT_STRING)
-    value = Name.create(name_value=name_value, name_type=name_type)
-    name_obj = Attribute(attribute_name=attribute_name, attribute_value=value)
-
-    attributes = [name_obj]
+    value = Name.create(name, NameType.UNINTERPRETED_TEXT_STRING)
+    name_attr = attribute_factory.create_attribute(AttributeType.NAME, value)
+    attributes = [name_attr]
 
     ssmask = None
     if storage_status_mask is not None:
