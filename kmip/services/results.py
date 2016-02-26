@@ -253,7 +253,6 @@ class QueryResult(OperationResult):
         else:
             self.extension_information = extension_information
 
-
 class DiscoverVersionsResult(OperationResult):
 
     def __init__(self,
@@ -264,7 +263,6 @@ class DiscoverVersionsResult(OperationResult):
         super(DiscoverVersionsResult, self).__init__(
             result_status, result_reason, result_message)
         self.protocol_versions = protocol_versions
-
 
 class RevokeResult(OperationResult):
 
