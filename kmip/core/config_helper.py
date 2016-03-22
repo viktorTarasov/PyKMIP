@@ -22,10 +22,12 @@ FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 # TODO (peter-hamilton): Remove support for kmipconfig.ini on future release.
 CONFIG_FILE = [
-    os.path.join(os.path.expanduser('~'), '.pykmip', 'pykmip.conf'),
-    os.path.join(os.sep, 'etc', 'pykmip', 'pykmip.conf'),
-    os.path.normpath(os.path.join(FILE_PATH, '../pykmip.conf')),
-    os.path.normpath(os.path.join(FILE_PATH, '../kmipconfig.ini'))]
+    # os.path.join(os.path.expanduser('~'), '.pykmip', 'pykmip.conf'),
+    # os.path.join(os.sep, 'etc', 'pykmip', 'pykmip.conf'),
+    # os.path.normpath(os.path.join(FILE_PATH, '../pykmip.conf')),
+    # os.path.normpath(os.path.join(FILE_PATH, '../kmipconfig.ini')),
+    os.path.normpath(os.path.join(FILE_PATH, '../my-kmip.conf'))
+    ]
 
 
 class ConfigHelper(object):

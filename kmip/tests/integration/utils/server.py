@@ -18,6 +18,8 @@ import optparse
 import os
 import sys
 
+from six.moves.configparser import SafeConfigParser
+
 from kmip.core.config_helper import ConfigHelper
 
 from kmip.services.server.kmip_server import KMIPServer
@@ -36,6 +38,10 @@ def run_server(host, port, certfile, keyfile, cert_reqs, ssl_version,
                         suppress_ragged_eofs=suppress_ragged_eofs)
 
     logger.info('Starting the KMIP server')
+    logger.info('host ' + (host if host != None else 'None'))
+    logger.info('port {0}'.format((port if port != None else 'None')))
+    logger.info('keyfile ' + (keyfile if keyfile != None else 'None'))
+    logger.info('certfile ' + (certfile if certfile != None else 'None'))
 
     try:
         server.serve()
@@ -49,40 +55,66 @@ def run_server(host, port, certfile, keyfile, cert_reqs, ssl_version,
     logger.info('Shutting down KMIP server')
 
 
-def build_cli_parser():
+def build_cli_parser(conf, section):
     parser = optparse.OptionParser(usage="%prog [options]",
                                    description="Run KMIP Server")
-    parser.add_option("-n", "--host", action="store", default='127.0.0.1',
+
+    defaults = {
+            'host':'127.0.0.1',
+            'port':5696,
+            'keyfile':os.path.normpath(os.path.join(FILE_PATH,
+                    '../utils/certs/server.key')),
+            'certfile':os.path.normpath(os.path.join(FILE_PATH,
+                    '../utils/certs/server.crt')),
+            'cert_reqs':'CERT_NONE',
+            'ssl_version':'PROTOCOL_SSLv23',
+            'ca_certs':ConfigHelper.NONE_VALUE,
+            'do_handshake_on_connect':"True",
+            'suppress_ragged_eofs':"True"
+    }
+    if (section and isinstance(conf, SafeConfigParser)) :
+        for key in defaults :
+            if conf.has_option(section, key): defaults[key] = conf.get(section, key)
+
+    parser.add_option("-n", "--host", action="store", default=defaults['host'],
                       dest="host",
                       help="Hostname/IP address of platform running the KMIP "
                       "server (e.g., localhost, 127.0.0.1)")
-    parser.add_option("-p", "--port", action="store", default=5696,
+    parser.add_option("-p", "--port", action="store", default=defaults['port'],
                       dest="port", help="Port number for KMIP services")
     parser.add_option("-k", "--keyfile", action="store",
-                      default=os.path.normpath(os.path.join(
-                          FILE_PATH, '../utils/certs/server.key')),
-                      dest="keyfile")
+                      default=defaults['keyfile'], dest="keyfile")
     parser.add_option("-c", "--certfile", action="store",
-                      default=os.path.normpath(os.path.join(
-                          FILE_PATH, '../utils/certs/server.crt')),
-                      dest="certfile")
+                      default=defaults['certfile'], dest="certfile")
     parser.add_option("-r", "--cert_reqs", action="store",
-                      default="CERT_NONE", dest="cert_reqs")
+                      default=defaults['cert_reqs'], dest="cert_reqs")
     parser.add_option("-s", "--ssl_version", action="store",
-                      default='PROTOCOL_SSLv23', dest="ssl_version")
+                      default=defaults['ssl_version'], dest="ssl_version")
     parser.add_option("-a", "--ca_certs", action="store",
-                      default=ConfigHelper.NONE_VALUE, dest="ca_certs")
+                      default=defaults['ca_certs'], dest="ca_certs")
     parser.add_option("-d", "--do_handshake_on_connect", action="store",
-                      default="True", dest="do_handshake_on_connect")
+                      default=defaults['do_handshake_on_connect'],
+                      dest="do_handshake_on_connect")
     parser.add_option("-e", "--suppress_ragged_eofs", action="store",
-                      default="True", dest="suppress_ragged_eofs")
+                      default=defaults['suppress_ragged_eofs'],
+                      dest="suppress_ragged_eofs")
+
+    parser.add_option("", "--config-file", action="store",
+                      default=None, dest="conf_file")
+    parser.add_option("", "--config-section", action="store",
+                      default=None, dest="conf_section")
 
     return parser
 
 if __name__ == '__main__':
-    parser = build_cli_parser()
-
+    conf = SafeConfigParser()
+    parser = build_cli_parser(conf, None)
     opts, args = parser.parse_args(sys.argv[1:])
+
+    if opts.conf_file != None and opts.conf_section != None:
+        if conf.read(opts.conf_file) :
+            parser = build_cli_parser(conf, opts.conf_section)
+            opts, args = parser.parse_args(sys.argv[1:])
 
     run_server(host=opts.host,
                port=opts.port,
