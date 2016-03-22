@@ -21,8 +21,14 @@ import ssl
 from kmip.core.config_helper import ConfigHelper
 from kmip.core.server import KMIPImpl
 
+from kmip.core.primitives import ByteString
+from kmip.core.enums import Tags
+from kmip.core.enums import Types
+
 from kmip.services.server.kmip_protocol import KMIPProtocolFactory
 from kmip.services.server.processor import Processor
+
+from kmip.core.utils import BytearrayStream
 
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -38,7 +44,9 @@ class KMIPServer(object):
                             ssl_version, ca_certs, do_handshake_on_connect,
                             suppress_ragged_eofs)
 
-        handler = KMIPImpl()
+        handler = KMIPImpl(server_information=b'VTA Test server \x01\x02')
+        self.logger.info('server_information type {0}'.format(handler.server_information))
+
         self._processor = Processor(handler)
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -115,3 +123,4 @@ class KMIPServer(object):
             self.suppress_ragged_eofs = True
         else:
             self.suppress_ragged_eofs = False
+
