@@ -192,6 +192,30 @@ def build_cli_parser(operation=None):
             default=None,
             dest="name",
             help="Name of secret to retrieve from the KMIP server")
+        parser.add_option(
+            "",
+            "--storage-status-mask",
+            action="store",
+            type="str",
+            default=None,
+            dest="storage_status_mask",
+            help="Storage status mask: 'online' or 'archival'")
+        parser.add_option(
+            "",
+            "--object-group-member",
+            action="store",
+            type="str",
+            default=None,
+            dest="object_group_member",
+            help="Object group member: 'fresh' or 'default'")
+        parser.add_option(
+            "",
+            "--maximum-items",
+            action="store",
+            type="int",
+            default=None,
+            dest="maximum_items",
+            help="Maximum items to return")
     elif operation is Operation.REGISTER:
         parser.add_option(
             "-f",
@@ -222,6 +246,17 @@ def build_cli_parser(operation=None):
                 dest="protocol_versions",
                 help=("Protocol versions supported by client. "
                       "ex. '1.1,1.2 1.3'"))
+    elif operation is Operation.QUERY:
+        parser.add_option(
+                "-q",
+                "--query-functions",
+                action="store",
+                type="str",
+                default=None,
+                dest="query_functions",
+                help=("Request query functions. Query functions include: "
+                      "OPERATIONS, OBJECT, SERVER_INFORMATION, "
+                      "APPLICATION_NAMESPACES, EXTENSION_LIST EXTENSION_MAP"))
 
     return parser
 
@@ -555,7 +590,7 @@ def log_key_value(logger, key_value):
         key_material = key_value.key_material
         attributes = key_value.attributes
 
-        logger.info('key material: {0}'.format(repr(key_material)))
+        logger.info('key material: {0}'.format(''.join('{:02x}'.format(x) for x in key_material.value)))
 
         log_attribute_list(logger, attributes)
     else:
