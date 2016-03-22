@@ -535,8 +535,10 @@ class TestKMIPServer(TestCase):
         nameattr = attr_factory.create_attribute(AttributeType.NAME, value)
 
         attrs = [nameattr]
+        print("Attr: {0}".format(nameattr))
         res = self.kmip.locate(attributes=attrs)
+        print("Res: {0}; ret {1}".format(res, res.result_status.value))
         self.assertEqual(
-            ResultStatus.OPERATION_FAILED,
+            ResultStatus.SUCCESS,
             res.result_status.value,
             'locate result status did not return success')
