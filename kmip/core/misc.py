@@ -130,13 +130,13 @@ class ServerInformation(Struct):
     validate the object's contents.
     """
 
-    def __init__(self):
+    def __init__(self, blob=None):
         """
         Construct a ServerInformation object.
         """
         super(ServerInformation, self).__init__(Tags.SERVER_INFORMATION)
 
-        self.data = BytearrayStream()
+        self.data = BytearrayStream(blob)
 
         self.validate()
 
