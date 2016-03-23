@@ -42,7 +42,7 @@ from kmip.core.messages.contents import ProtocolVersion
 from kmip.core.messages.contents import Operation
 
 from kmip.core.misc import KeyFormatType
-#from kmip.core.misc import VendorIdentification
+# from kmip.core.misc import VendorIdentification
 from kmip.core.misc import ServerInformation
 
 from kmip.core.objects import KeyBlock
@@ -184,7 +184,8 @@ class KMIPImpl(KMIP):
         else:
             bit_length = len_attr.attribute_value.value
 
-        fresh_attribute = self.attribute_factory.create_attribute(AT.FRESH, True)
+        fresh_attribute = self.attribute_factory.create_attribute(AT.FRESH,
+                                                                  True)
         attributes.append(fresh_attribute)
 
         key = self._gen_symmetric_key(bit_length, crypto_alg)
@@ -363,21 +364,24 @@ class KMIPImpl(KMIP):
                                           result_message=msg)
 
     def query(self, query_functions=None):
-        self.logger.warning("query(query_functions={0}) called".format(query_functions))
+        self.logger.warning("query(query_functions={0}) called".
+                            format(query_functions))
         msg = 'query server capabilities'
 
         query_result_args = {}
         if query_functions:
             for query in query_functions:
-                print ("Query: {0}".format(query))
-                if query.value == QueryFunctionEnum.QUERY_OPERATIONS :
+                print("Query: {0}".format(query))
+                if query.value == QueryFunctionEnum.QUERY_OPERATIONS:
                     query_result_args['operations'] = self.operations
                 elif query.value == QueryFunctionEnum.QUERY_OBJECTS:
                     query_result_args['object_types'] = self.object_types
                 elif query.value == QueryFunctionEnum.QUERY_SERVER_INFORMATION:
-                    if self.server_information != None:
-                        query_result_args['server_information'] = self.server_information
-                elif query.value == QueryFunctionEnum.QUERY_APPLICATION_NAMESPACES:
+                    if self.server_information is not None:
+                        query_result_args['server_information'] \
+                            = self.server_information
+                elif query.value == \
+                        QueryFunctionEnum.QUERY_APPLICATION_NAMESPACES:
                     pass
                 elif query.value == QueryFunctionEnum.QUERY_EXTENSION_LIST:
                     pass
@@ -386,12 +390,12 @@ class KMIPImpl(KMIP):
 
         self.logger.debug(msg)
         try:
-            return QueryResult(ResultStatus(RS.SUCCESS),**query_result_args)
+            return QueryResult(ResultStatus(RS.SUCCESS), **query_result_args)
         except NotImplementedError:
             msg = ResultMessage('Query Operation Not Supported')
             reason = ResultReason(ResultReasonEnum.OPERATION_NOT_SUPPORTED)
             return QueryResult(ResultStatus(RS.OPERATION_FAILED),
-                    result_reason=reason, result_message=msg)
+                               result_reason=reason, result_message=msg)
 
     def _validate_req_field(self, attrs, name, expected, msg, required=True):
         self.logger.debug('Validating attribute %s' % name)

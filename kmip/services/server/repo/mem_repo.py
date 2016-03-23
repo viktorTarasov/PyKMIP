@@ -18,7 +18,8 @@ from kmip.core.attributes import UniqueIdentifier
 from kmip.core.enums import AttributeType
 from kmip.core.enums import ObjectGroupMember
 from kmip.core.enums import StorageStatusMask
-from kmip.core.objects import Attribute
+# from kmip.core.objects import Attribute
+
 
 class MemRepo(ManagedObjectRepo):
 
@@ -55,7 +56,7 @@ class MemRepo(ManagedObjectRepo):
                object_group_member, attributes):
         result = list()
 
-        if maximum_items != None and  maximum_items.value == 0:
+        if maximum_items is not None and maximum_items.value == 0:
                 return result
 
         for idx in self.repo:
@@ -67,37 +68,41 @@ class MemRepo(ManagedObjectRepo):
 
             for attr in obj_attributes:
                 for lattr in attributes:
-                    if (attr.attribute_name == lattr.attribute_name
-                            and attr.attribute_value == lattr.attribute_value) :
+                    if ((attr.attribute_name == lattr.attribute_name) and
+                            (attr.attribute_value == lattr.attribute_value)):
                         matched_attrs += 1
 
                 if attr.attribute_name.value == AttributeType.FRESH.value:
                     fresh = attr.attribute_value
 
-                if attr.attribute_name.value == AttributeType.ARCHIVE_DATE.value:
+                if attr.attribute_name.value == \
+                        AttributeType.ARCHIVE_DATE.value:
                     have_archive_date = True
 
-            if object_group_member != None:
-                if object_group_member.value == ObjectGroupMember.GROUP_MEMBER_FRESH:
-                     if not fresh :
-                         continue
+            if object_group_member is not None:
+                if object_group_member.value == \
+                        ObjectGroupMember.GROUP_MEMBER_FRESH:
+                    if not fresh:
+                        continue
                 else:
-                     if fresh :
-                         continue
+                    if fresh:
+                        continue
 
-            if storage_status_mask != None:
-                if storage_status_mask.value == StorageStatusMask.ARCHIVAL_STORAGE:
+            if storage_status_mask is not None:
+                if storage_status_mask.value == \
+                        StorageStatusMask.ARCHIVAL_STORAGE:
                     if not have_archive_date:
                         continue
-                if storage_status_mask.value == StorageStatusMask.ONLINE_STORAGE:
+                if storage_status_mask.value == \
+                        StorageStatusMask.ONLINE_STORAGE:
                     if have_archive_date:
                         continue
 
             if matched_attrs == len(attributes):
                 result.append(UniqueIdentifier(idx))
 
-            if maximum_items != None and maximum_items.value <= len(result):
+            if maximum_items is not None and \
+               maximum_items.value <= len(result):
                 break
 
         return result
-
