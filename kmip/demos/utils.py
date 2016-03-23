@@ -590,7 +590,8 @@ def log_key_value(logger, key_value):
         key_material = key_value.key_material
         attributes = key_value.attributes
 
-        logger.info('key material: {0}'.format(''.join('{:02x}'.format(x) for x in key_material.value)))
+        logger.info('key material: {0}'.format(
+                ''.join('{:02x}'.format(x) for x in key_material.value)))
 
         log_attribute_list(logger, attributes)
     else:

@@ -38,10 +38,10 @@ def run_server(host, port, certfile, keyfile, cert_reqs, ssl_version,
                         suppress_ragged_eofs=suppress_ragged_eofs)
 
     logger.info('Starting the KMIP server')
-    logger.info('host ' + (host if host != None else 'None'))
-    logger.info('port {0}'.format((port if port != None else 'None')))
-    logger.info('keyfile ' + (keyfile if keyfile != None else 'None'))
-    logger.info('certfile ' + (certfile if certfile != None else 'None'))
+    logger.info('host ' + (host if host is not None else 'None'))
+    logger.info('port {0}'.format((port if port is not None else 'None')))
+    logger.info('keyfile ' + (keyfile if keyfile is not None else 'None'))
+    logger.info('certfile ' + (certfile if certfile is not None else 'None'))
 
     try:
         server.serve()
@@ -60,21 +60,22 @@ def build_cli_parser(conf, section):
                                    description="Run KMIP Server")
 
     defaults = {
-            'host':'127.0.0.1',
-            'port':5696,
-            'keyfile':os.path.normpath(os.path.join(FILE_PATH,
-                    '../utils/certs/server.key')),
-            'certfile':os.path.normpath(os.path.join(FILE_PATH,
-                    '../utils/certs/server.crt')),
-            'cert_reqs':'CERT_NONE',
-            'ssl_version':'PROTOCOL_SSLv23',
-            'ca_certs':ConfigHelper.NONE_VALUE,
-            'do_handshake_on_connect':"True",
-            'suppress_ragged_eofs':"True"
+            'host': '127.0.0.1',
+            'port': 5696,
+            'keyfile': os.path.normpath(os.path.join(FILE_PATH,
+                                        '../utils/certs/server.key')),
+            'certfile': os.path.normpath(os.path.join(FILE_PATH,
+                                         '../utils/certs/server.crt')),
+            'cert_reqs': 'CERT_NONE',
+            'ssl_version': 'PROTOCOL_SSLv23',
+            'ca_certs': ConfigHelper.NONE_VALUE,
+            'do_handshake_on_connect': "True",
+            'suppress_ragged_eofs': "True"
     }
-    if (section and isinstance(conf, SafeConfigParser)) :
-        for key in defaults :
-            if conf.has_option(section, key): defaults[key] = conf.get(section, key)
+    if (section and isinstance(conf, SafeConfigParser)):
+        for key in defaults:
+            if conf.has_option(section, key):
+                defaults[key] = conf.get(section, key)
 
     parser.add_option("-n", "--host", action="store", default=defaults['host'],
                       dest="host",
@@ -111,8 +112,8 @@ if __name__ == '__main__':
     parser = build_cli_parser(conf, None)
     opts, args = parser.parse_args(sys.argv[1:])
 
-    if opts.conf_file != None and opts.conf_section != None:
-        if conf.read(opts.conf_file) :
+    if opts.conf_file is not None and opts.conf_section is not None:
+        if conf.read(opts.conf_file):
             parser = build_cli_parser(conf, opts.conf_section)
             opts, args = parser.parse_args(sys.argv[1:])
 

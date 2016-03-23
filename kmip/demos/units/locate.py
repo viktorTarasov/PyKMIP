@@ -26,7 +26,7 @@ from kmip.core.attributes import Name
 from kmip.core.factories.attributes import AttributeFactory
 from kmip.core.factories.credentials import CredentialFactory
 
-from kmip.core.objects import Attribute
+# from kmip.core.objects import Attribute
 
 from kmip.demos import utils
 
@@ -75,7 +75,7 @@ if __name__ == '__main__':
     attributes = [name_attr]
 
     ssmask = None
-    if storage_status_mask != None:
+    if storage_status_mask is not None:
         if storage_status_mask == 'online':
             ssmask = StorageStatusMask.ONLINE_STORAGE
         elif storage_status_mask == 'archival':
@@ -84,8 +84,8 @@ if __name__ == '__main__':
             logging.debug('Invalid storage-status-mask value')
             sys.exit()
 
-    if object_group_member != None:
-        if object_group_member == 'fresh' :
+    if object_group_member is not None:
+        if object_group_member == 'fresh':
             object_group_member = ObjectGroupMember.GROUP_MEMBER_FRESH
         elif object_group_member == 'default':
             object_group_member = ObjectGroupMember.GROUP_MEMBER_DEFAULT
@@ -99,10 +99,10 @@ if __name__ == '__main__':
 
     # Locate UUID of specified SYMMETRIC_KEY object
     result = client.locate(maximum_items=maximum_items,
-            storage_status_mask=ssmask,
-            object_group_member=object_group_member,
-            attributes=attributes,
-            credential=credential)
+                           storage_status_mask=ssmask,
+                           object_group_member=object_group_member,
+                           attributes=attributes,
+                           credential=credential)
     client.close()
 
     # Display operation results

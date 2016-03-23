@@ -311,12 +311,12 @@ class Processor(object):
         result_message = result.result_message
 
         response_payload_args = {
-            'operations'            : result.operations,
-            'object_types'          : result.object_types,
-            'vendor_identification' : result.vendor_identification,
-            'server_information'    : result.server_information,
-            'application_namespaces' : result.application_namespaces,
-            'extension_information' : result.extension_information
+            'operations':               result.operations,
+            'object_types':             result.object_types,
+            'vendor_identification':    result.vendor_identification,
+            'server_information':       result.server_information,
+            'application_namespaces':   result.application_namespaces,
+            'extension_information':    result.extension_information
         }
 
         resp_pl = QueryResponsePayload(**response_payload_args)
