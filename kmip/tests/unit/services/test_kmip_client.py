@@ -16,13 +16,13 @@
 from testtools import TestCase
 
 from kmip.core.attributes import PrivateKeyUniqueIdentifier
-from kmip.core.attributes import Name
+# from kmip.core.attributes import Name
 
-from kmip.core.enums import AttributeType
+# from kmip.core.enums import AttributeType
 from kmip.core.enums import AuthenticationSuite
 from kmip.core.enums import ConformanceClause
 from kmip.core.enums import CredentialType
-from kmip.core.enums import NameType
+# from kmip.core.enums import NameType
 from kmip.core.enums import Operation as OperationEnum
 from kmip.core.enums import QueryFunction as QueryFunctionEnum
 
@@ -44,8 +44,8 @@ from kmip.core.messages.payloads.query import \
     QueryRequestPayload, QueryResponsePayload
 from kmip.core.messages.payloads.rekey_key_pair import \
     RekeyKeyPairRequestPayload, RekeyKeyPairResponsePayload
-from kmip.core.messages.payloads.locate import \
-    LocateRequestPayload, LocateResponsePayload
+# from kmip.core.messages.payloads.locate import \
+#     LocateRequestPayload, LocateResponsePayload
 
 from kmip.core.misc import Offset
 from kmip.core.misc import QueryFunction
@@ -336,53 +336,54 @@ class TestKMIPClient(TestCase):
         protocol_versions = None
         self._test_build_discover_versions_batch_item(protocol_versions)
 
-
-    def _test_build_locate_batch_item(self, name):
-        value = Name.create(name, NameType.UNINTERPRETED_TEXT_STRING)
-        name_attr = self.attr_factory.create_attribute(AttributeType.NAME, value)
-        batch_item = self.client._build_locate_batch_item(attributes=[name_attr])
-
-        base = "expected {0}, received {1}"
-        msg = base.format(RequestBatchItem, batch_item)
-        self.assertIsInstance(batch_item, RequestBatchItem, msg)
-
-        operation = batch_item.operation
-
-        msg = base.format(Operation, operation)
-        self.assertIsInstance(operation, Operation, msg)
-
-        operation_enum = operation.value
-
-        msg = base.format(OperationEnum.LOCATE, operation_enum)
-        self.assertEqual(OperationEnum.LOCATE, operation_enum, msg)
-
-        payload = batch_item.request_payload
-
-        msg = base.format(LocateRequestPayload, payload)
-        self.assertIsInstance(payload, LocateRequestPayload, msg)
-
-        return batch_item
-
-    def _test_send_locate_message(self, batch_item):
-        credential = self.client._build_credential()
-        message = self.client._build_request_message(credential, [batch_item])
-        #self.client.open()
-        #print ("Protocol {0}".format(self.client.protocol))
-        # data = self.client._receive_message()
-        #self.client.close()
-
-
-        #sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #self.client._create_socket(sock)
-
-        # self.client._send_message(message)
-        # message = messages.ResponseMessage()
-        # data = self.client._receive_message()
-
-    def test_build_locate_batch_item(self):
-        batch_item = self._test_build_locate_batch_item("Testing Locate operation")
-        self._test_send_locate_message(batch_item)
-
+#    def _test_build_locate_batch_item(self, name):
+#        value = Name.create(name, NameType.UNINTERPRETED_TEXT_STRING)
+#        name_attr = self.attr_factory.create_attribute(
+#                AttributeType.NAME, value)
+#        batch_item = self.client._build_locate_batch_item(
+#                attributes=[name_attr])
+#
+#        base = "expected {0}, received {1}"
+#        msg = base.format(RequestBatchItem, batch_item)
+#        self.assertIsInstance(batch_item, RequestBatchItem, msg)
+#
+#        operation = batch_item.operation
+#
+#        msg = base.format(Operation, operation)
+#        self.assertIsInstance(operation, Operation, msg)
+#
+#        operation_enum = operation.value
+#
+#        msg = base.format(OperationEnum.LOCATE, operation_enum)
+#        self.assertEqual(OperationEnum.LOCATE, operation_enum, msg)
+#
+#        payload = batch_item.request_payload
+#
+#        msg = base.format(LocateRequestPayload, payload)
+#        self.assertIsInstance(payload, LocateRequestPayload, msg)
+#
+#        return batch_item
+#
+#    def _test_send_locate_message(self, batch_item):
+#        credential = self.client._build_credential()
+#        message = self.client._build_request_message(credential,
+#                                                     [batch_item])
+#        # self.client.open()
+#        # print ("Protocol {0}".format(self.client.protocol))
+#        # data = self.client._receive_message()
+#        # self.client.close()
+#
+#        # sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+#        # self.client._create_socket(sock)
+#
+#        # self.client._send_message(message)
+#        # message = messages.ResponseMessage()
+#        # data = self.client._receive_message()
+#
+#    def test_build_locate_batch_item(self):
+#        batch_item = self._test_build_locate_batch_item(
+#                "Testing Locate operation")
+#        self._test_send_locate_message(batch_item)
 
     def test_build_get_attribute_list_batch_item(self):
         uid = '00000000-1111-2222-3333-444444444444'
