@@ -24,7 +24,6 @@ from kmip.core.enums import ConformanceClause
 from kmip.core.enums import CredentialType
 from kmip.core.enums import ResultStatus as ResultStatusEnum
 from kmip.core.enums import ResultReason as ResultReasonEnum
-# from kmip.core.enums import NameType
 from kmip.core.enums import Operation as OperationEnum
 from kmip.core.enums import QueryFunction as QueryFunctionEnum
 
