@@ -291,13 +291,15 @@ class KmipEngine(object):
         )
         return message
 
-    def build_error_response(self, version, reason, message):
+    def build_error_response(self, version, status, reason, message):
         """
         Build a simple ResponseMessage with a single error result.
 
         Args:
             version (ProtocolVersion): The protocol version the response
                 should be addressed with.
+            status (ResultStatus): An enumeration classifying type of
+                result status
             reason (ResultReason): An enumeration classifying the type of
                 error occurred.
             message (str): A string providing additional information about
@@ -308,9 +310,7 @@ class KmipEngine(object):
                 single error result.
         """
         batch_item = messages.ResponseBatchItem(
-            result_status=contents.ResultStatus(
-                enums.ResultStatus.OPERATION_FAILED
-            ),
+            result_status=contents.ResultStatus(status),
             result_reason=contents.ResultReason(reason),
             result_message=contents.ResultMessage(message)
         )
