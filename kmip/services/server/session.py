@@ -89,11 +89,13 @@ class KmipSession(threading.Thread):
 
         max_size = self._max_response_size
 
+        self._logger.debug("Request Data {0}".format(request_data))
         try:
             request.read(request_data)
         except Exception as e:
             self._logger.warning("Failure parsing request message.")
             self._logger.exception(e)
+
             response = self._engine.build_error_response(
                 contents.ProtocolVersion.create(1, 0),
                 enums.ResultReason.INVALID_MESSAGE,
@@ -145,8 +147,16 @@ class KmipSession(threading.Thread):
             response_data = utils.BytearrayStream()
             response.write(response_data)
 
+        self._logger.debug("Response Data {0}".format(response_data))
         self._send_response(response_data.buffer)
 
+    def _build_fail_response(self, reason, message):
+        protocol_version=contents.ProtocolVersion.create(1, 1)
+        status = enums.ResultStatus.OPERATION_FAILED
+        return self._engine.build_error_response(protocol_version,
+                                                 status,
+                                                 reason,
+                                                 message)
     def _receive_request(self):
         header = self._receive_bytes(8)
         message_size = struct.unpack('!I', header[4:])[0]
