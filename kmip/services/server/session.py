@@ -85,63 +85,50 @@ class KmipSession(threading.Thread):
     def _handle_message_loop(self):
         request_data = self._receive_request()
         request = messages.RequestMessage()
-
+        self._logger.debug("Request Data {0}".format(request_data))
         try:
             request.read(request_data)
         except Exception as e:
             self._logger.info("Failure parsing request message.")
             self._logger.exception(e)
-            response = self._build_error_response(
-                enums.ResultStatus.OPERATION_FAILED,
+            response = self._build_fail_response(
                 enums.ResultReason.INVALID_MESSAGE,
                 "Error parsing request message. See server logs for more "
                 "information.")
         else:
-            # TODO (peterhamilton): Replace this with a KmipEngine call.
-            response = self._build_error_response(
-                enums.ResultStatus.OPERATION_FAILED,
-                enums.ResultReason.INVALID_MESSAGE,
-                "Default response. No operations supported."
-            )
+            response, max_response_size = self._engine.process_request(request)
 
         response_data = utils.BytearrayStream()
         response.write(response_data)
 
-        if len(response_data) > self._max_response_size:
-            self._logger.error(
-                "Response message length too large: "
-                "{0} bytes, max {1} bytes".format(
-                    len(response_data),
-                    self._max_response_size
-                )
-            )
-            response = self._build_error_response(
-                enums.ResultStatus.OPERATION_FAILED,
-                enums.ResultReason.RESPONSE_TOO_LARGE,
-                "Response message length too large. See server logs for "
-                "more information.")
+        error_message = None
+        if max_response_size is not None:
+            if len(response_data) > max_response_size:
+                error_message = "Response message length larger then limit "
+                "imposed by client."
 
+        if len(response_data) > self._max_response_size:
+            error_message = "Response message length too large"
+
+        if error_message is not None:
+            self._logger.error("{0}: {1} bytes, max {2} bytes".format(
+                error_message,
+                len(response_data),
+                max_response_size))
+            response = self._build_fail_response(
+                enums.ResultReason.RESPONSE_TOO_LARGE,
+                error_message)
+
+        self._logger.debug("Response Data {0}".format(response_data))
         self._send_response(response_data.buffer)
 
-    def _build_error_response(self, status, reason, message):
-        """
-        TODO (peterhamilton): Move this into the KmipEngine.
-        """
-        header = messages.ResponseHeader(
-            protocol_version=contents.ProtocolVersion.create(1, 1),
-            time_stamp=contents.TimeStamp(int(time.time())),
-            batch_count=contents.BatchCount(1))
-        batch_item = messages.ResponseBatchItem(
-            result_status=contents.ResultStatus(status),
-            result_reason=contents.ResultReason(reason),
-            result_message=contents.ResultMessage(message)
-        )
-        response = messages.ResponseMessage(
-            response_header=header,
-            batch_items=[batch_item]
-        )
-        return response
-
+    def _build_fail_response(self, reason, message):
+        protocol_version=contents.ProtocolVersion.create(1, 1)
+        status = enums.ResultStatus.OPERATION_FAILED
+        return self._engine.build_error_response(protocol_version,
+                                                 status,
+                                                 reason,
+                                                 message)
     def _receive_request(self):
         header = self._receive_bytes(8)
         message_size = struct.unpack('!I', header[4:])[0]
