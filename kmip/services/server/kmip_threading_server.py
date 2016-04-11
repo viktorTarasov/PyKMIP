@@ -26,11 +26,20 @@ from kmip.services.server.session import KmipSession
 class KMIPServerRequestHandler(socketserver.BaseRequestHandler):
 
     def handle(self):
+        logstream = logging.StreamHandler()
+        logstream.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        logstream.setFormatter(formatter)
+
         title = threading.current_thread().name
-        engine = KmipEngine()
+        # engine = KmipEngine(db_url='sqlite:///:memory:')
+        engine = KmipEngine(db_url='sqlite:////tmp/kmip-sql.db')
         session = KmipSession(engine,
                               self.request,
-                              "{} {}".format(title, self.client_address))
+                              name="{} {}".format(title, self.client_address),
+                              logstream=logstream)
         session.run()
 
 
@@ -69,6 +78,7 @@ class KMIPThreadingServer(object):
                  do_handshake_on_connect=None, suppress_ragged_eofs=None):
         self.logger = logging.getLogger(__name__)
 
+        print("KMIPServerAsync() open")
         self._set_variables(host, port, keyfile, certfile, cert_reqs,
                             ssl_version, ca_certs, do_handshake_on_connect,
                             suppress_ragged_eofs)
@@ -80,7 +90,7 @@ class KMIPThreadingServer(object):
             self.keyfile)
 
     def close(self):
-        print("KMIPServerAsync() closœe")
+        print("KMIPServerAsync() close")
         self.server.shutdown()
         self.server.server_close()
 
