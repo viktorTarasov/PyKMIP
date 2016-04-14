@@ -35,7 +35,8 @@ class KMIPServerRequestHandler(socketserver.BaseRequestHandler):
 
         title = threading.current_thread().name
         # engine = KmipEngine(db_url='sqlite:///:memory:')
-        engine = KmipEngine(db_url='sqlite:////tmp/kmip-sql.db')
+        engine = KmipEngine(db_url='sqlite:////tmp/kmip-sql.db', 
+			    logstream=logstream)
         session = KmipSession(engine,
                               self.request,
                               name="{} {}".format(title, self.client_address),

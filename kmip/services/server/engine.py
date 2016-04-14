@@ -77,11 +77,14 @@ class KmipEngine(object):
         * Cryptographic usage mask enforcement per object type
     """
 
-    def __init__(self, db_url='sqlite:///:memory:'):
+    def __init__(self, db_url='sqlite:///:memory:', logstream=None):
         """
         Create a KmipEngine.
         """
         self._logger = logging.getLogger('kmip.server.engine')
+        if logstream is not None:
+            self._logger.setLevel(logstream.level)
+            self._logger.addHandler(logstream)
 
         self._cryptography_engine = engine.CryptographyEngine()
 
@@ -583,6 +586,16 @@ class KmipEngine(object):
                         raise exceptions.InvalidField(
                             "Cannot set duplicate name values."
                         )
+            elif attribute_name == 'Link':
+                link_types = [link.link_type for link in managed_object._links]
+                for x in attribute_value:
+                    if x.link_type in link_types:
+                        raise exceptions.InvalidField(
+                            "Only one {} link allowed".format(x.link_type)
+                        )
+                managed_object._links.extend(
+                    [x for x in attribute_value]
+                )
             else:
                 # TODO (peterhamilton) Remove when all attributes are supported
                 raise exceptions.InvalidField(
@@ -602,6 +615,8 @@ class KmipEngine(object):
                 for e in enums.CryptographicUsageMask:
                     if e.value & attribute_value.value:
                         value.append(e)
+            elif attribute_name == 'Link':
+                field = 'link'
 
             if field:
                 existing_value = getattr(managed_object, field)
@@ -890,6 +905,42 @@ class KmipEngine(object):
 
         # NOTE (peterhamilton) SQLAlchemy will *not* assign an ID until
         # commit is called. This makes future support for UNDO problematic.
+        self._data_session.commit()
+
+        # For Private Key object set link to Public Key
+        link_to_pubkey = self._attribute_factory.create_attribute(
+                enums.AttributeType.LINK,
+                [
+                    enums.LinkType.PUBLIC_KEY_LINK,
+                    public_key.unique_identifier
+                ])
+        private_key_server_attributes = {
+            link_to_pubkey.attribute_name.value:[
+                link_to_pubkey.attribute_value
+            ]
+        }
+        self._set_attributes_on_managed_object(
+            private_key,
+            private_key_server_attributes
+        )
+
+        # For Public Key object set link to Private Key
+        link_to_prvkey = self._attribute_factory.create_attribute(
+                enums.AttributeType.LINK,
+                [
+                    enums.LinkType.PRIVATE_KEY_LINK,
+                    private_key.unique_identifier
+                ])
+        public_key_server_attributes = {
+            link_to_prvkey.attribute_name.value:[
+                link_to_prvkey.attribute_value
+            ]
+        }
+        self._set_attributes_on_managed_object(
+            public_key,
+            public_key_server_attributes
+        )
+
         self._data_session.commit()
 
         self._logger.info(

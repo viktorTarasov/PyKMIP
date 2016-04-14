@@ -626,6 +626,153 @@ class ObjectGroup(TextString):
     def __init__(self, value=None):
         super(ObjectGroup, self).__init__(value, Tags.OBJECT_GROUP)
 
+# 3.35
+class Link(Struct):
+
+    class LinkType(Enumeration):
+
+        def __init__(self, value=None):
+            super(Link.LinkType, self).__init__(
+                enums.LinkType, value, Tags.LINK_TYPE)
+
+        def __eq__(self, other):
+            if isinstance(other, Link.LinkType):
+                if self.value == other.value:
+                    return True
+                else:
+                    return False
+            else:
+                return NotImplemented
+
+        def __repr__(self):
+            return "{0}({1})".format(
+                    type(self).__name__, repr(self.value.name))
+
+        def __str__(self):
+            return "{0}".format(self.value.name)
+
+    class LinkedObjectID(TextString):
+
+        def __init__(self, value=None):
+            super(Link.LinkedObjectID, self).__init__(value, Tags.LINKED_OBJECT_IDENTIFIER)
+
+        def __eq__(self, other):
+            if isinstance(other, Link.LinkedObjectID):
+                if self.value == other.value:
+                    return True
+                else:
+                    return False
+            else:
+                return NotImplemented
+
+        def __repr__(self):
+            return "{0}({1})".format(
+                    type(self).__name__, repr(self.value))
+
+        def __str__(self):
+            return "{0}".format(self.value)
+
+    def __init__(self, linked_object_id=None, link_type=None):
+        super(Link, self).__init__(tag=Tags.LINK)
+        self.link_type = link_type
+        self.linked_object_id = linked_object_id
+        self.validate()
+
+    def read(self, istream):
+        super(Link, self).read(istream)
+        tstream = BytearrayStream(istream.read(self.length))
+
+        # Read the type of link and ID of linked object
+        self.link_type = Link.LinkType()
+        self.linked_object_id = Link.LinkedObjectID()
+        self.link_type.read(tstream)
+        self.linked_object_id.read(tstream)
+
+        self.is_oversized(tstream)
+
+    def write(self, ostream):
+        tstream = BytearrayStream()
+
+        # Write the type of link and ID of linked object
+        self.linked_object_id.write(tstream)
+        self.link_type.write(tstream)
+
+        # Write the length and value of the template attribute
+        self.length = tstream.length()
+        super(Link, self).write(ostream)
+        ostream.write(tstream.buffer)
+
+    def validate(self):
+        self.__validate()
+
+    def __validate(self):
+        name = Link.__name__
+        msg = ErrorStrings.BAD_EXP_RECV
+        if self.linked_object_id and \
+                not isinstance(self.linked_object_id, \
+                        Link.LinkedObjectID) and \
+                not isinstance(self.linked_object_id, str):
+            member = 'linked_object_id'
+            raise TypeError(msg.format('{0}.{1}'.format(name, member),
+                                       'linked_object_id',
+                                       type(Link.LinkedObjectID),
+                                       type(self.linked_object_id)))
+        if self.link_type and \
+                not isinstance(self.link_type, Link.LinkType) and \
+                not isinstance(self.link_type, str):
+            member = 'link_type'
+            raise TypeError(msg.format('{0}.{1}'.format(name, member),
+                                       'link_type', type(Link.LinkType),
+                                       type(self.link_type)))
+
+    @classmethod
+    def create(cls, link_type, linked_object_id):
+        if isinstance(link_type, Link.LinkType):
+            l_type = link_type
+        elif isinstance(link_type, Enum):
+            l_type = cls.LinkType(link_type)
+        else:
+            name = 'Link'
+            msg = ErrorStrings.BAD_EXP_RECV
+            member = 'link_type'
+            raise TypeError(msg.format('{0}.{1}'.format(name, member),
+                                       'link_type', type(Link.LinkType),
+                                       type(link_type)))
+
+        if isinstance(linked_object_id, Link.LinkedObjectID):
+            object_id = linked_object_id
+        elif isinstance(linked_object_id, str):
+            object_id = cls.LinkedObjectID(linked_object_id)
+        elif isinstance(linked_object_id, int):
+            object_id = cls.LinkedObjectID(str(linked_object_id))
+        else:
+            name = 'Link'
+            msg = ErrorStrings.BAD_EXP_RECV
+            member = 'linked_object_id'
+            raise TypeError(msg.format('{0}.{1}'.format(name, member),
+                                       'linked_object_id,', type(Link.LinkedObjectID),
+                                       type(linked_object_id)))
+
+        return Link(linked_object_id=object_id, link_type=l_type)
+
+    def __repr__(self):
+        return "{0}({1},{2})".format(
+                type(self).__name__,
+                repr(self.link_type),
+                repr(self.linked_object_id))
+
+    def __str__(self):
+        return "{0}:{1}".format(self.link_type.value, self.linked_object_id.value)
+
+    def __eq__(self, other):
+        if isinstance(other, Link):
+            if self.link_type == other.link_type and \
+                        self.linked_object_id == other.linked_object_id:
+                return True
+            else:
+                return False
+        else:
+            return NotImplemented
 
 # 3.36
 class ApplicationNamespace(TextString):
