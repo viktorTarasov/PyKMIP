@@ -116,6 +116,7 @@ class KmipEngine(object):
         }
 
         self._attribute_policy = policy.AttributePolicy(self._protocol_version)
+        self._attribute_factory = factory.AttributeFactory()
 
     def _kmip_version_supported(supported):
         def decorator(function):
@@ -581,6 +582,16 @@ class KmipEngine(object):
                         raise exceptions.InvalidField(
                             "Cannot set duplicate name values."
                         )
+            elif attribute_name == 'Link':
+                link_types = [link.link_type for link in managed_object.links]
+                for x in attribute_value:
+                    if x.link_type in link_types:
+                        raise exceptions.InvalidField(
+                            "Only one {0} link allowed".format(x.link_type)
+                        )
+                managed_object.links.extend(
+                    [x for x in attribute_value]
+                )
             else:
                 # TODO (peterhamilton) Remove when all attributes are supported
                 raise exceptions.InvalidField(
@@ -879,6 +890,42 @@ class KmipEngine(object):
 
         # NOTE (peterhamilton) SQLAlchemy will *not* assign an ID until
         # commit is called. This makes future support for UNDO problematic.
+        self._data_session.commit()
+
+        # For Private Key object set link to Public Key
+        link_to_pubkey = self._attribute_factory.create_attribute(
+                enums.AttributeType.LINK,
+                [
+                    enums.LinkType.PUBLIC_KEY_LINK,
+                    public_key.unique_identifier
+                ])
+        private_key_server_attributes = {
+            link_to_pubkey.attribute_name.value: [
+                link_to_pubkey.attribute_value
+            ]
+        }
+        self._set_attributes_on_managed_object(
+            private_key,
+            private_key_server_attributes
+        )
+
+        # For Public Key object set link to Private Key
+        link_to_prvkey = self._attribute_factory.create_attribute(
+                enums.AttributeType.LINK,
+                [
+                    enums.LinkType.PRIVATE_KEY_LINK,
+                    private_key.unique_identifier
+                ])
+        public_key_server_attributes = {
+            link_to_prvkey.attribute_name.value: [
+                link_to_prvkey.attribute_value
+            ]
+        }
+        self._set_attributes_on_managed_object(
+            public_key,
+            public_key_server_attributes
+        )
+
         self._data_session.commit()
 
         self._logger.info(
