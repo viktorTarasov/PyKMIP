@@ -79,7 +79,7 @@ class KmipEngine(object):
         * Cryptographic usage mask enforcement per object type
     """
 
-    def __init__(self, db_url='sqlite:///:memory:'):
+    def __init__(self, db_url='sqlite:///:memory:', logstream=None):
         """
         Create a KmipEngine.
         """

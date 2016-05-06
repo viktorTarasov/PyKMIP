@@ -17,6 +17,7 @@ import logging
 import socket
 import struct
 import threading
+import sys
 
 from kmip.core import enums
 from kmip.core import exceptions
@@ -29,7 +30,7 @@ class KmipSession(threading.Thread):
     A session thread representing a single KMIP client/server interaction.
     """
 
-    def __init__(self, engine, connection, name=None):
+    def __init__(self, engine, connection, name=None, logstream=None):
         """
         Create a KmipSession.
 
@@ -52,6 +53,9 @@ class KmipSession(threading.Thread):
         self._logger = logging.getLogger(
             'kmip.server.session.{0}'.format(self.name)
         )
+        self._logger.setLevel(logging.DEBUG)
+        if logstream is not None:
+            self._logger.addHandler(logstream)
 
         self._engine = engine
         self._connection = connection
