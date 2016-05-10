@@ -86,7 +86,6 @@ def build_cli_parser(operation=None):
         default="client",
         dest="config",
         help="Client configuration group to load from configuration file")
-
     if operation is Operation.CREATE:
         parser.add_option(
             "-a",
@@ -266,7 +265,23 @@ def build_cli_parser(operation=None):
             default=None,
             dest="attribute_value",
             help="Attribute value")
-
+    elif operation == "Import PKCS#12":
+        parser.add_option(
+            "",
+            "--pkcs12-file",
+            action="store",
+            type="str",
+            default=None,
+            dest="pkcs12_file",
+            help="File with PKCS#12")
+        parser.add_option(
+            "",
+            "--pkcs12-password",
+            action="store",
+            type="str",
+            default=None,
+            dest="pkcs12_password",
+            help="PKCS#12 password")
     return parser
 
 
