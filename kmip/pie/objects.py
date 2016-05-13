@@ -101,13 +101,13 @@ class ManagedObject(sql.Base):
         return self._object_type
 
     def get_attribute_list(self):
-        names = list()
+        attributes_names = list()
         if len(self.names) > 0:
-            names.append(enums.AttributeType.NAME.value)
+            attributes_names.append(AttributeType.NAME.value)
         if self._object_type is not None:
-            names.append(enums.AttributeType.OBJECT_TYPE.value)
+            attributes_names.append(AttributeType.OBJECT_TYPE.value)
 
-        return names
+        return attributes_names
 
     @object_type.setter
     def object_type(self, value):
@@ -203,13 +203,14 @@ class CryptographicObject(ManagedObject):
 
     @abstractmethod
     def get_attribute_list(self):
-        names = super(CryptographicObject, self).get_attribute_list()
+        attribute_names = super(CryptographicObject, self).get_attribute_list()
         if len(self.cryptographic_usage_masks) > 0:
-            names.append(enums.AttributeType.CRYPTOGRAPHIC_USAGE_MASK.value)
+            attribute_names.append(
+                AttributeType.CRYPTOGRAPHIC_USAGE_MASK.value)
         if len(self.links) > 0:
-            names.append(enums.AttributeType.LINK.value)
+            attribute_names.append(AttributeType.LINK.value)
 
-        return names
+        return attribute_names
 
     @abstractmethod
     def valid_link_types(self):
@@ -295,9 +296,9 @@ class Key(CryptographicObject):
     def get_attribute_list(self):
         names = super(Key, self).get_attribute_list()
         if self.cryptographic_algorithm is not None:
-            names.append(enums.AttributeType.CRYPTOGRAPHIC_ALGORITHM.value)
+            names.append(AttributeType.CRYPTOGRAPHIC_ALGORITHM.value)
         if self.cryptographic_length is not None:
-            names.append(enums.AttributeType.CRYPTOGRAPHIC_LENGTH.value)
+            names.append(AttributeType.CRYPTOGRAPHIC_LENGTH.value)
         return names
 
 
@@ -850,7 +851,7 @@ class Certificate(CryptographicObject):
     def get_attribute_list(self):
         names = super(Certificate, self).get_attribute_list()
         if self.certificate_type is not None:
-            names.append(enums.AttributeType.CERTIFICATE_TYPE.value)
+            names.append(AttributeType.CERTIFICATE_TYPE.value)
         '''
         TODO: parse certificate value and supply
               other CERTIFICATE_* attributes
