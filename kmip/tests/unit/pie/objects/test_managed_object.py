@@ -15,6 +15,7 @@
 
 from testtools import TestCase
 
+from kmip.core.enums import AttributeType
 from kmip.pie.objects import ManagedObject
 
 
@@ -97,6 +98,25 @@ class TestManagedObject(TestCase):
             dummy.object_type = 'placeholder'
 
         self.assertRaises(AttributeError, set_object_type)
+
+    def test_get_attribute_list(self):
+        """
+        Test list of managed object attributes
+        Expected OBJECT-TYPE and NAME attributes
+        """
+        expected = 'dummy'
+        dummy = DummyManagedObject(expected)
+        dummy.names = ["Name of Dummy"]
+
+        attributes = dummy.get_attribute_list()
+        print("Attrs {0}".format(attributes))
+
+        base = "expected {0}, received {1}"
+        msg = base.format(list, attributes)
+        self.assertIsInstance(attributes, list, msg)
+        self.assertEqual(2, len(attributes))
+        self.assertIn(AttributeType.OBJECT_TYPE.value, attributes)
+        self.assertIn(AttributeType.NAME.value, attributes)
 
     def test_validate(self):
         """

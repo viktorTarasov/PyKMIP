@@ -21,9 +21,11 @@ from sqlalchemy.orm import relationship
 import binascii
 import six
 
-from kmip.core import enums
-from kmip.pie import sqltypes as sql
 from kmip.core import exceptions
+from kmip.core import enums
+from kmip.core.enums import AttributeType
+
+from kmip.pie import sqltypes as sql
 
 
 class ManagedObject(sql.Base):
@@ -368,7 +370,7 @@ class SymmetricKey(Key):
         self.validate()
 
     def valid_link_types(self):
-        return super(SymmetricKey, self).get_valid_link_types() + [
+        return super(SymmetricKey, self).valid_link_types() + [
             enums.LinkType.DERIVATION_BASE_OBJECT_LINK,
             enums.LinkType.DERIVED_KEY_LINK,
             enums.LinkType.REPLACEMENT_OBJECT_LINK,

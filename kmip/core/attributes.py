@@ -693,6 +693,15 @@ class Link(Struct):
 
     def __init__(self, link_type=None, linked_oid=None):
         super(Link, self).__init__(tag=Tags.LINK)
+
+        if link_type is not None:
+            if isinstance(link_type, enums.LinkType):
+                link_type = Link.LinkType(link_type)
+
+        if linked_oid is not None:
+            if isinstance(linked_oid, str):
+                linked_oid = Link.LinkedObjectID(linked_oid)
+
         self.link_type = link_type
         self.linked_oid = linked_oid
         self.validate()
@@ -729,16 +738,14 @@ class Link(Struct):
         msg = ErrorStrings.BAD_EXP_RECV
 
         oid = self.linked_oid
-        if oid and not isinstance(oid, Link.LinkedObjectID) and \
-                not isinstance(oid, str):
+        if oid and not isinstance(oid, Link.LinkedObjectID):
             member = 'linked_oid'
             raise TypeError(msg.format('{0}.{1}'.format(name, member),
                                        'linked_oid',
                                        type(Link.LinkedObjectID),
                                        type(self.linked_oid)))
         ltype = self.link_type
-        if ltype and not isinstance(ltype, Link.LinkType) and \
-                not isinstance(ltype, str):
+        if ltype and not isinstance(ltype, Link.LinkType):
             member = 'link_type'
             raise TypeError(msg.format('{0}.{1}'.format(name, member),
                                        'link_type', type(Link.LinkType),
