@@ -21,7 +21,9 @@ from sqlalchemy.orm import relationship
 import binascii
 import six
 
+from kmip.core import exceptions
 from kmip.core import enums
+
 from kmip.pie import sqltypes as sql
 
 
@@ -152,6 +154,10 @@ class CryptographicObject(ManagedObject):
                                primary_key=True)
     cryptographic_usage_masks = Column('cryptographic_usage_mask',
                                        sql.UsageMaskType)
+    _links = relationship('CryptographicObjectLink', back_populates='co',
+                          cascade='all, delete-orphan')
+    links = association_proxy('_links', 'link')
+
     __mapper_args__ = {
         'polymorphic_identity': 'CryptographicObject'
     }
@@ -168,6 +174,7 @@ class CryptographicObject(ManagedObject):
         super(CryptographicObject, self).__init__()
 
         self.cryptographic_usage_masks = list()
+        self.links = list()
 
         # All remaining attributes are not considered part of the public API
         # and are subject to change.
@@ -182,9 +189,34 @@ class CryptographicObject(ManagedObject):
         self._destroy_date = None
         self._fresh = None
         self._lease_time = None
-        self._links = list()
         self._revocation_reason = None
         self._state = None
+
+    @abstractmethod
+    def valid_link_types(self):
+        return [
+            enums.LinkType.PARENT_LINK,
+            enums.LinkType.CHILD_LINK,
+            enums.LinkType.PREVIOUS_LINK,
+            enums.LinkType.NEXT_LINK,
+        ]
+
+    def validate_link(self, in_link):
+        if in_link in self.links:
+            return
+
+        allowed_link_types = self.valid_link_types()
+
+        if in_link.link_type.value not in allowed_link_types:
+            raise exceptions.InvalidField(
+                "Attribute {0} not allowed for {1} object".format(
+                    in_link.link_type, self._object_type))
+
+        existing_link_types = [x.link_type for x in self.links]
+        if in_link.link_type in existing_link_types:
+            raise exceptions.InvalidField(
+                "Only one {0} link allowed".format(in_link.link_type)
+            )
 
 
 class Key(CryptographicObject):
@@ -309,6 +341,14 @@ class SymmetricKey(Key):
         self._protect_stop_date = None
 
         self.validate()
+
+    def valid_link_types(self):
+        return super(SymmetricKey, self).valid_link_types() + [
+            enums.LinkType.DERIVATION_BASE_OBJECT_LINK,
+            enums.LinkType.DERIVED_KEY_LINK,
+            enums.LinkType.REPLACEMENT_OBJECT_LINK,
+            enums.LinkType.REPLACED_OBJECT_LINK
+        ]
 
     def validate(self):
         """
@@ -456,6 +496,14 @@ class PublicKey(Key):
         self._cryptographic_domain_parameters = list()
 
         self.validate()
+
+    def valid_link_types(self):
+        return super(PublicKey, self).valid_link_types() + [
+            enums.LinkType.CERTIFICATE_LINK,
+            enums.LinkType.PRIVATE_KEY_LINK,
+            enums.LinkType.REPLACEMENT_OBJECT_LINK,
+            enums.LinkType.REPLACED_OBJECT_LINK
+        ]
 
     def validate(self):
         """
@@ -609,6 +657,13 @@ class PrivateKey(Key):
 
         self.validate()
 
+    def valid_link_types(self):
+        return super(PrivateKey, self).valid_link_types() + [
+            enums.LinkType.PUBLIC_KEY_LINK,
+            enums.LinkType.REPLACEMENT_OBJECT_LINK,
+            enums.LinkType.REPLACED_OBJECT_LINK
+        ]
+
     def validate(self):
         """
         Verify that the contents of the PrivateKey object are valid.
@@ -755,6 +810,14 @@ class Certificate(CryptographicObject):
         self._digital_signature_algorithm = list()
 
         self.validate()
+
+    def valid_link_types(self):
+        return super(Certificate, self).valid_link_types() + [
+            enums.LinkType.PUBLIC_KEY_LINK,
+            enums.LinkType.CERTIFICATE_LINK,
+            enums.LinkType.REPLACEMENT_OBJECT_LINK,
+            enums.LinkType.REPLACED_OBJECT_LINK
+        ]
 
     def validate(self):
         """
@@ -924,6 +987,12 @@ class SecretData(CryptographicObject):
         # unsupported by kmip.core
 
         self.validate()
+
+    def valid_link_types(self):
+        return super(SecretData, self).valid_link_types() + [
+            enums.LinkType.DERIVATION_BASE_OBJECT_LINK,
+            enums.LinkType.DERIVED_KEY_LINK
+        ]
 
     def validate(self):
         """
