@@ -218,6 +218,17 @@ if __name__ == '__main__':
             logger.info("Successfully added {0} to object {1}".format(
                 attribute, uid))
 
+#TODO: something wrong with contact-info length x*8
+# ERROR - Invalid length used to read Base, bytes remaining: 8
+            contact_information = [
+                AttributeType.CONTACT_INFORMATION,
+                "https://github.com/OpenKMIP/PyKMIP"]
+            uid, attribute = client.add_attribute(
+                certificate_uid,
+                *contact_information)
+            logger.info("Successfully Name added {0} to object {1}".format(
+                attribute, uid))
+
             for ca_cert in ca_certs:
                 uid = client.register(ca_cert.cert_object)
                 setattr(ca_cert, "uid", uid)

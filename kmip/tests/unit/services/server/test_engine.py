@@ -1320,6 +1320,7 @@ class TestKmipEngine(testtools.TestCase):
             ],
             managed_object.cryptographic_usage_masks
         )
+        self.assertEqual(True,False)
 
     def test_set_attribute_on_managed_object_unsupported_features(self):
         """

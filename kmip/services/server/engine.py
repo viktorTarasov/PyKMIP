@@ -602,34 +602,28 @@ class KmipEngine(object):
                             "Cannot set duplicate name values."
                         )
             elif attribute_name == 'Link':
-                attributes = attribute_value
-                for attr in attribute_value:
+                if attribute_value in managed_object.links:
                     # ignore already existing link
-                    if attr in managed_object.links:
-                        self._logger.info(
-                            "For {0}:{1} ignoring already existing"
-                            "link {2}".format(
-                                managed_object.object_type.name,
-                                managed_object.unique_identifier,
-                                repr(attr)))
-                        attributes.remove(attr)
-                        continue
-
+                    self._logger.info(
+                        "For {0}:{1} ignoring already existing"
+                        "link {2}".format(
+                            managed_object.object_type.name,
+                            managed_object.unique_identifier,
+                            repr(attribute_value)))
+                else:
                     # Check if new link is compatible with the object type;
                     # check if object already has link of the same type
-                    managed_object.validate_link(attr)
+                    managed_object.validate_link(attribute_value)
 
                     # Check if linked-oid points to the existing object
                     linked_object_exists = self._is_object_exists(
-                        attr.linked_oid.value)
+                        attribute_value.linked_oid.value)
                     if not linked_object_exists:
                         raise exceptions.InvalidField(
                             "Trying to link non-existing object {0}".format(
-                                attr.linked_oid.value))
+                                attribute_value.linked_oid.value))
 
-                managed_object.links.extend(
-                    [x for x in attributes]
-                )
+                    managed_object.links.append(attribute_value)
             else:
                 # TODO (peterhamilton) Remove when all attributes are supported
                 raise exceptions.InvalidField(
@@ -649,9 +643,14 @@ class KmipEngine(object):
                 for e in enums.CryptographicUsageMask:
                     if e.value & attribute_value.value:
                         value.append(e)
+            elif attribute_name == 'Contact Information':
+                field = 'contact_information'
 
             if field:
-                existing_value = getattr(managed_object, field)
+                existing_value = None
+                if hasattr(managed_object, field):
+                    existing_value = getattr(managed_object, field)
+
                 if existing_value:
                     if existing_value != value:
                         raise exceptions.InvalidField(
@@ -711,9 +710,8 @@ class KmipEngine(object):
                     m_public_key.unique_identifier
                 ])
         certificate_server_attributes = {
-            link_to_pubkey.attribute_name.value: [
+            link_to_pubkey.attribute_name.value:
                 link_to_pubkey.attribute_value
-            ]
         }
         self._set_attributes_on_managed_object(
             certificate,
@@ -1352,9 +1350,8 @@ class KmipEngine(object):
         ).one()
 
         attribute_to_add = {
-            attribute.attribute_name.value: [
+            attribute.attribute_name.value:
                 attribute.attribute_value
-            ]
         }
         self._set_attributes_on_managed_object(
             managed_object,
