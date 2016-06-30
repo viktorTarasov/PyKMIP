@@ -162,3 +162,31 @@ class ManagedObjectName(Base):
             return not (self == other)
         else:
             return NotImplemented
+
+
+class ContactInformation(Base):
+
+    __tablename__ = 'contact_informations'
+    id = Column('id', Integer, primary_key=True)
+    value = Column(String, nullable=False)
+
+    def __init__(self, value):
+        self.value = value
+
+    def __repr__(self):
+        return "<ContactInformation(contact_information='%s')>" % self.value
+
+    def __eq__(self, other):
+        if isinstance(other, ContactInformation):
+            if self.value != other.value:
+                return False
+            else:
+                return True
+        else:
+            return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, ContactInformation):
+            return not (self == other)
+        else:
+            return NotImplemented
