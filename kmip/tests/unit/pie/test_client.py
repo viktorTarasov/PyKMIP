@@ -680,3 +680,101 @@ class TestProxyKmipClient(testtools.TestCase):
 
         self.assertRaisesRegexp(
             KmipOperationFailure, error_msg, client.register, *args)
+
+    @mock.patch('kmip.pie.client.KMIPProxy',
+                mock.MagicMock(spec_set=KMIPProxy))
+    def test_add_attribute(self):
+        """
+        Test that an attribute can be associated with object.
+        """
+        # Create the template to test the add-attribute call
+        contact_information = "https://github.com/OpenKMIP/PyKMIP"
+        obj_id = '5A5A'
+        attr_ci = self.attribute_factory.create_attribute(
+            enums.AttributeType.CONTACT_INFORMATION,
+            contact_information)
+
+        status = enums.ResultStatus.SUCCESS
+        result = results.AddAttributeResult(
+            contents.ResultStatus(status),
+            uid=attr.UniqueIdentifier(obj_id),
+            attribute=attr_ci)
+
+        with ProxyKmipClient() as client:
+            client.proxy.add_attribute.return_value = result
+
+            uid, ret_attribute = client.add_attribute(
+                obj_id,
+                enums.AttributeType.CONTACT_INFORMATION,
+                contact_information)
+
+            client.proxy.add_attribute.assert_called_with(
+                obj_id,
+                attr_ci)
+
+            self.assertIsInstance(uid, six.string_types)
+            self.assertEqual(uid, obj_id)
+
+    @mock.patch('kmip.pie.client.KMIPProxy',
+                mock.MagicMock(spec_set=KMIPProxy))
+    def test_add_attribute_on_closed(self):
+        """
+        Test that a ClientConnectionNotOpen exception is raised when trying
+        to add attribute with a closed client connection.
+        """
+        # Create the template to test the add-attribute call
+        contact_information = "https://github.com/OpenKMIP/PyKMIP"
+        obj_id = '5A5A'
+        args = [obj_id,
+                enums.AttributeType.CONTACT_INFORMATION,
+                contact_information]
+
+        client = ProxyKmipClient()
+        self.assertRaises(
+            ClientConnectionNotOpen, client.add_attribute, *args)
+
+    @mock.patch('kmip.pie.client.KMIPProxy',
+                mock.MagicMock(spec_set=KMIPProxy))
+    def test_add_attribute_on_invalid_uid(self):
+        """
+        Test that a ClientConnectionNotOpen exception is raised when trying
+        to add attribute with a closed client connection.
+        """
+        # Create the template to test the add-attribute call
+        contact_information = "https://github.com/OpenKMIP/PyKMIP"
+        obj_id = 0x5A5A
+        args = [obj_id,
+                enums.AttributeType.CONTACT_INFORMATION,
+                contact_information]
+
+        with ProxyKmipClient() as client:
+            self.assertRaises(TypeError, client.add_attribute, *args)
+
+    @mock.patch('kmip.pie.client.KMIPProxy',
+                mock.MagicMock(spec_set=KMIPProxy))
+    def test_add_attribute_on_operation_failure(self):
+        """
+        Test that a KmipOperationFailure exception is raised when the
+        backend fails to add an attribute.
+        """
+        contact_information = "https://github.com/OpenKMIP/PyKMIP"
+        obj_id = '5A5A'
+
+        status = enums.ResultStatus.OPERATION_FAILED
+        reason = enums.ResultReason.GENERAL_FAILURE
+        message = "Test failure message"
+
+        result = results.OperationResult(
+            contents.ResultStatus(status),
+            contents.ResultReason(reason),
+            contents.ResultMessage(message))
+        error_msg = str(KmipOperationFailure(status, reason, message))
+
+        with ProxyKmipClient() as client:
+            client.proxy.add_attribute.return_value = result
+
+            args = [obj_id,
+                    enums.AttributeType.CONTACT_INFORMATION,
+                    contact_information]
+            self.assertRaisesRegexp(
+                KmipOperationFailure, error_msg, client.add_attribute, *args)
