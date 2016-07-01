@@ -79,16 +79,18 @@ class KmipEngine(object):
         * Cryptographic usage mask enforcement per object type
     """
 
-    def __init__(self):
+    def __init__(self, db_url='sqlite:////tmp/pykmip.database', logstream=None):
         """
         Create a KmipEngine.
         """
         self._logger = logging.getLogger('kmip.server.engine')
+        if logstream is not None:
+            self._logger.addHandler(logstream)
 
         self._cryptography_engine = engine.CryptographyEngine()
 
         self._data_store = sqlalchemy.create_engine(
-            'sqlite:////tmp/pykmip.database',
+            db_url,
             echo=False
         )
         sqltypes.Base.metadata.create_all(self._data_store)
