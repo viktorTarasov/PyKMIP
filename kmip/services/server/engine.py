@@ -630,7 +630,6 @@ class KmipEngine(object):
             field = None
             value = attribute_value.value
 
-            print("_set_attribute_on_managed_object() value {0}".format(value))
             if attribute_name == 'Cryptographic Algorithm':
                 field = 'cryptographic_algorithm'
             elif attribute_name == 'Cryptographic Length':
@@ -645,7 +644,6 @@ class KmipEngine(object):
                 field = 'contact_information'
                 value = sqltypes.ContactInformation(value)
 
-            print("_set_attribute_on_managed_object() field {0}".format(field))
             if field:
                 existing_value = getattr(managed_object, field)
                 if existing_value:
