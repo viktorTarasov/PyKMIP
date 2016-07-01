@@ -32,6 +32,7 @@ from kmip.core.factories import secrets
 from kmip.core.messages import contents
 from kmip.core.messages import messages
 
+from kmip.core.messages.payloads import add_attribute
 from kmip.core.messages.payloads import create
 from kmip.core.messages.payloads import create_key_pair
 from kmip.core.messages.payloads import destroy
@@ -629,6 +630,7 @@ class KmipEngine(object):
             field = None
             value = attribute_value.value
 
+            print("_set_attribute_on_managed_object() value {0}".format(value))
             if attribute_name == 'Cryptographic Algorithm':
                 field = 'cryptographic_algorithm'
             elif attribute_name == 'Cryptographic Length':
@@ -639,7 +641,11 @@ class KmipEngine(object):
                 for e in enums.CryptographicUsageMask:
                     if e.value & attribute_value.value:
                         value.append(e)
+            elif attribute_name == 'Contact Information':
+                field = 'contact_information'
+                value = sqltypes.ContactInformation(value)
 
+            print("_set_attribute_on_managed_object() field {0}".format(field))
             if field:
                 existing_value = getattr(managed_object, field)
                 if existing_value:
@@ -737,6 +743,8 @@ class KmipEngine(object):
             return self._process_discover_versions(payload)
         elif operation == enums.Operation.GET_ATTRIBUTE_LIST:
             return self._process_get_attribute_list(payload)
+        elif operation == enums.Operation.ADD_ATTRIBUTE:
+            return self._process_add_attribute(payload)
         else:
             raise exceptions.OperationNotSupported(
                 "{0} operation is not supported by the server.".format(
@@ -1292,6 +1300,39 @@ class KmipEngine(object):
         response_payload = get_attribute_list.GetAttributeListResponsePayload(
             uid=unique_identifier,
             attribute_names=managed_object.get_attribute_list()
+        )
+
+        return response_payload
+
+    def _process_add_attribute(self, payload):
+        self._logger.info("Processing operation: Add Attribute")
+
+        unique_identifier = self._id_placeholder
+        if payload.uid:
+            unique_identifier = payload.uid
+
+        attribute = payload.attribute
+
+        object_type = self._get_object_type(unique_identifier)
+
+        managed_object = self._data_session.query(object_type).filter(
+            object_type.unique_identifier == unique_identifier
+        ).one()
+
+        attribute_to_add = {
+            attribute.attribute_name.value:
+                attribute.attribute_value
+        }
+        self._set_attributes_on_managed_object(
+            managed_object,
+            attribute_to_add
+        )
+
+        self._data_session.commit()
+
+        response_payload = add_attribute.AddAttributeResponsePayload(
+            uid=unique_identifier,
+            attribute=attribute
         )
 
         return response_payload

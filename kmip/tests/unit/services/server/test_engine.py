@@ -35,6 +35,7 @@ from kmip.core.factories import attributes as factory
 from kmip.core.messages import contents
 from kmip.core.messages import messages
 
+from kmip.core.messages.payloads import add_attribute
 from kmip.core.messages.payloads import create
 from kmip.core.messages.payloads import create_key_pair
 from kmip.core.messages.payloads import destroy
@@ -4001,3 +4002,53 @@ class TestKmipEngine(testtools.TestCase):
                       response_payload.attribute_names)
         self.assertIn(enums.AttributeType.CRYPTOGRAPHIC_LENGTH.value,
                       response_payload.attribute_names)
+
+    def test_add_attribute(self):
+        """
+        Test that a AddAttribute request can be processed correctly.
+        """
+        contact_information = 'https://github.com/OpenKMIP/PyKMIP'
+        e = engine.KmipEngine()
+        e._data_store = self.engine
+        e._data_store_session_factory = self.session_factory
+        e._data_session = e._data_store_session_factory()
+        e._logger = mock.MagicMock()
+
+        obj = pie_objects.OpaqueObject(b'', enums.OpaqueDataType.NONE)
+
+        e._data_session.add(obj)
+        e._data_session.commit()
+        e._data_session = e._data_store_session_factory()
+
+        obj_id = str(obj.unique_identifier)
+
+        attribute_factory = factory.AttributeFactory()
+        attribute = attribute_factory.create_attribute(
+            enums.AttributeType.CONTACT_INFORMATION,
+            contact_information)
+
+        payload = add_attribute.AddAttributeRequestPayload(
+            uid=obj_id,
+            attribute=attribute
+        )
+
+        response_payload = e._process_operation(
+            enums.Operation.ADD_ATTRIBUTE,
+            payload)
+        e._data_session.commit()
+        e._data_session = e._data_store_session_factory()
+
+        e._logger.info.assert_any_call("Processing operation: Add Attribute")
+        self.assertEqual(obj_id, response_payload.uid)
+
+        self.assertIsInstance(response_payload.attribute, objects.Attribute)
+        self.assertEqual(
+            enums.AttributeType.CONTACT_INFORMATION.value,
+            response_payload.attribute.attribute_name.value
+        )
+        self.assertEqual(
+            contact_information,
+            response_payload.attribute.attribute_value.value
+        )
+
+        e._data_session.commit()

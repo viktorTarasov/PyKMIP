@@ -55,6 +55,13 @@ class ManagedObject(sql.Base):
                           cascade='all, delete-orphan')
     names = association_proxy('_names', 'name')
 
+    contact_information_id = Column(
+        Integer,
+        ForeignKey('contact_informations.id'))
+    contact_information = relationship(
+        "ContactInformation",
+        foreign_keys="ManagedObject.contact_information_id")
+
     __mapper_args__ = {
         'polymorphic_identity': 'ManagedObject',
         'polymorphic_on': _class_type
@@ -78,7 +85,6 @@ class ManagedObject(sql.Base):
         # All remaining attributes are not considered part of the public API
         # and are subject to change.
         self._application_specific_informations = list()
-        self._contact_information = None
         self._object_groups = list()
         self._operation_policy_name = None
 

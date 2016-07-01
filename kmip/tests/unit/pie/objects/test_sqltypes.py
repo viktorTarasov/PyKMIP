@@ -19,6 +19,7 @@ from kmip.core import enums
 from kmip.core import attributes
 from kmip.pie.sqltypes import ManagedObjectName
 from kmip.pie.sqltypes import CryptographicObjectLink
+from kmip.pie.sqltypes import ContactInformation
 
 
 class TestSqlTypesManagedObjectName(testtools.TestCase):
@@ -258,3 +259,58 @@ class TestSqlTypesCryptographicObjectLink(testtools.TestCase):
         link = attributes.Link.create(enums.LinkType.PUBLIC_KEY_LINK, 12)
         a = CryptographicObjectLink(link, 0)
         self.assertTrue(repr(a) == repr_expected)
+
+
+class TestSqlTypesContactInformation(testtools.TestCase):
+    """
+    Test suite for objects in sqltypes.py.
+    """
+    def setUp(self):
+        super(TestSqlTypesContactInformation, self).setUp()
+
+        self.ci = ContactInformation('a')
+        self.ci_same = ContactInformation('a')
+        self.ci_other = ContactInformation('b')
+
+    def tearDown(self):
+            super(TestSqlTypesContactInformation, self).tearDown()
+
+    def test_equal_on_equal(self):
+        """
+        Test that the equality operator returns True when comparing two
+        ContactInformation objects with the same data.
+        """
+        self.assertTrue(self.ci == self.ci_same)
+        self.assertTrue(self.ci_same == self.ci)
+
+    def test_equal_on_not_equal(self):
+        """
+        Test that the equality operator returns False when comparing two
+        ContactInformation objects with different value.
+        """
+        self.assertFalse(self.ci == self.ci_other)
+        self.assertFalse(self.ci_other == self.ci)
+        self.assertFalse(self.ci == 'invalid')
+
+    def test_not_equal_on_equal(self):
+        """
+        Test that the not equal operator returns False when comparing two
+        ContactInformation objects with the same data.
+        """
+        self.assertFalse(self.ci != self.ci_same)
+        self.assertFalse(self.ci_same != self.ci)
+
+    def test_not_equal_on_not_equal(self):
+        """
+        Test that the not equal operator returns True when comparing two
+        different ContactInformation objects.
+        """
+        self.assertTrue(self.ci != self.ci_other)
+        self.assertTrue(self.ci_other != self.ci)
+        self.assertTrue(self.ci_other != 'invalid')
+
+    def test_repr(self):
+        """
+        Test that __repr__ is implemented.
+        """
+        repr(self.ci)
