@@ -86,7 +86,6 @@ def build_cli_parser(operation=None):
         default="client",
         dest="config",
         help="Client configuration group to load from configuration file")
-
     if operation is Operation.CREATE:
         parser.add_option(
             "-a",
@@ -112,7 +111,7 @@ def build_cli_parser(operation=None):
             type="str",
             default=None,
             dest="algorithm",
-            help="Encryption algorithm for the secret (e.g., AES)")
+            help="Key type (e.g., RSA, EC)")
         parser.add_option(
             "-l",
             "--length",
@@ -120,7 +119,7 @@ def build_cli_parser(operation=None):
             type="int",
             default=None,
             dest="length",
-            help="Key length in bits (e.g., 128, 256)")
+            help="Key length in bits (e.g., 2048, 4096, 384, 521)")
         parser.add_option(
             "-n",
             "--name",
@@ -222,6 +221,17 @@ def build_cli_parser(operation=None):
                 dest="protocol_versions",
                 help=("Protocol versions supported by client. "
                       "ex. '1.1,1.2 1.3'"))
+    elif operation is Operation.QUERY:
+        parser.add_option(
+                "-q",
+                "--query-functions",
+                action="store",
+                type="str",
+                default=None,
+                dest="query_functions",
+                help=("Request query functions. Query functions include: "
+                      "OPERATIONS, OBJECT, SERVER_INFORMATION, "
+                      "APPLICATION_NAMESPACES, EXTENSION_LIST EXTENSION_MAP"))
     elif operation is Operation.ADD_ATTRIBUTE:
         parser.add_option(
             "-i",
@@ -246,7 +256,7 @@ def build_cli_parser(operation=None):
             type="str",
             default=None,
             dest="attribute_sub_type",
-            help="Attribute sub type. ex. 'LinkType' of attribute 'Link'")
+            help="Attribute sub type. ex. 'LinkType's of attribute 'Link'")
         parser.add_option(
             "",
             "--attribute-value",
@@ -255,7 +265,23 @@ def build_cli_parser(operation=None):
             default=None,
             dest="attribute_value",
             help="Attribute value")
-
+    elif operation == "Import PKCS#12":
+        parser.add_option(
+            "",
+            "--pkcs12-file",
+            action="store",
+            type="str",
+            default=None,
+            dest="pkcs12_file",
+            help="File with PKCS#12")
+        parser.add_option(
+            "",
+            "--pkcs12-password",
+            action="store",
+            type="str",
+            default=None,
+            dest="pkcs12_password",
+            help="PKCS#12 password")
     return parser
 
 
