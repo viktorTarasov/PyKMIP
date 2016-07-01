@@ -30,7 +30,7 @@ class KmipSession(threading.Thread):
     A session thread representing a single KMIP client/server interaction.
     """
 
-    def __init__(self, engine, connection, name=None):
+    def __init__(self, engine, connection, name=None, logstream=None):
         """
         Create a KmipSession.
 
@@ -53,6 +53,10 @@ class KmipSession(threading.Thread):
         self._logger = logging.getLogger(
             'kmip.server.session.{0}'.format(self.name)
         )
+
+        self._logger.setLevel(logging.DEBUG)
+        if logstream is not None:
+            self._logger.addHandler(logstream)
 
         self._engine = engine
         self._connection = connection
@@ -89,6 +93,7 @@ class KmipSession(threading.Thread):
 
         max_size = self._max_response_size
 
+        self._logger.debug("Request Data {0}".format(request_data))
         try:
             request.read(request_data)
         except Exception as e:
@@ -145,6 +150,7 @@ class KmipSession(threading.Thread):
             response_data = utils.BytearrayStream()
             response.write(response_data)
 
+        self._logger.debug("Response Data {0}".format(response_data))
         self._send_response(response_data.buffer)
 
     def _receive_request(self):
