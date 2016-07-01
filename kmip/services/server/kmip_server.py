@@ -47,7 +47,10 @@ class KMIPServer(object):
                             ssl_version, ca_certs, do_handshake_on_connect,
                             suppress_ragged_eofs)
 
-        handler = KMIPImpl()
+        handler = KMIPImpl(server_information=b'KMIP Test server \x01\x02')
+        self.logger.info('server_information type {0}'.
+                         format(handler.server_information))
+
         self._processor = Processor(handler)
 
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
