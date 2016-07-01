@@ -512,3 +512,14 @@ class TestSecretData(testtools.TestCase):
         self.assertIn(LinkType.NEXT_LINK, valid_types)
         self.assertIn(LinkType.DERIVATION_BASE_OBJECT_LINK, valid_types)
         self.assertIn(LinkType.DERIVED_KEY_LINK, valid_types)
+
+    def test_get_attribute_list(self):
+        """
+        Test list of names of attributes attached to SecretData object.
+        """
+        obj = SecretData(self.bytes_a, enums.SecretDataType.PASSWORD)
+        attr_names = obj.get_attribute_list()
+
+        self.assertEqual(2, len(attr_names))
+        self.assertIn(enums.AttributeType.NAME.value, attr_names)
+        self.assertIn(enums.AttributeType.OBJECT_TYPE.value, attr_names)
