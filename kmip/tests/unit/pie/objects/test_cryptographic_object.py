@@ -18,6 +18,9 @@ from testtools import TestCase
 
 from kmip.core import exceptions
 from kmip.core.attributes import Link
+
+from kmip.core.enums import AttributeType
+from kmip.core.enums import CryptographicUsageMask
 from kmip.core.enums import LinkType
 
 from kmip.pie.objects import CryptographicObject
@@ -146,6 +149,35 @@ class TestCryptographicObject(TestCase):
             linked_oid='1234')
 
         self.assertRaises(exceptions.InvalidField, dummy.validate_link, link)
+
+    def test_get_attribute_list(self):
+        """
+        Test list of crytpgraphic object attributes
+        Expected OBJECT-TYPE, NAME, USAGE-MASK and LINK attributes
+        """
+        expected = 'dummy'
+        dummy = DummyCryptographicObject(expected)
+        dummy.names = ["Name of Dummy"]
+        usage_masks = [
+            CryptographicUsageMask.SIGN,
+            CryptographicUsageMask.DECRYPT]
+        setattr(dummy, "cryptographic_usage_masks", usage_masks)
+
+        link = Link(
+            link_type=LinkType.PARENT_LINK,
+            linked_oid='1234')
+        dummy.links.extend([link])
+
+        attributes = dummy.get_attribute_list()
+
+        base = "expected {0}, received {1}"
+        msg = base.format(list, attributes)
+        self.assertIsInstance(attributes, list, msg)
+        self.assertEqual(4, len(attributes))
+        self.assertIn(AttributeType.OBJECT_TYPE.value, attributes)
+        self.assertIn(AttributeType.NAME.value, attributes)
+        self.assertIn(AttributeType.CRYPTOGRAPHIC_USAGE_MASK.value, attributes)
+        self.assertIn(AttributeType.LINK.value, attributes)
 
     def test_repr(self):
         """
