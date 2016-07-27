@@ -97,6 +97,7 @@ if __name__ == '__main__':
     config = opts.config
     pkcs12_file = opts.pkcs12_file
     pkcs12_password = opts.pkcs12_password
+    contact_information = opts.contact_information
 
     if pkcs12_file is None or pkcs12_password is None:
         logger.error("Missing mandatory arguments "
@@ -215,6 +216,18 @@ if __name__ == '__main__':
                 *public_key_link)
             logger.info("Successfully added {0} to object {1}".format(
                 attribute, uid))
+
+            if contact_information is not None:
+                ci_attr = [
+                    AttributeType.CONTACT_INFORMATION,
+                    contact_information
+                ]
+
+                uid, attribute = client.add_attribute(
+                    certificate_uid,
+                    *ci_attr)
+                logger.info("Successfully added {0} to object {1}".format(
+                    attribute, uid))
 
             for ca_cert in ca_certs:
                 uid = client.register(ca_cert.cert_object)

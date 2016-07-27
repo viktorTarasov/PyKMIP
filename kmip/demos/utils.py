@@ -86,6 +86,14 @@ def build_cli_parser(operation=None):
         default="client",
         dest="config",
         help="Client configuration group to load from configuration file")
+    parser.add_option(
+        "",
+        "--contact-information",
+        action="store",
+        type="str",
+        default=None,
+        dest="contact_information",
+        help="Object's contact information")
     if operation is Operation.CREATE:
         parser.add_option(
             "-a",
