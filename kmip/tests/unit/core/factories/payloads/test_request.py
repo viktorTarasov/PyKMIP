@@ -27,6 +27,7 @@ from kmip.core.messages.payloads import discover_versions
 from kmip.core.messages.payloads import get
 from kmip.core.messages.payloads import get_attribute_list
 from kmip.core.messages.payloads import locate
+from kmip.core.messages.payloads import notify
 from kmip.core.messages.payloads import query
 from kmip.core.messages.payloads import rekey_key_pair
 from kmip.core.messages.payloads import register
@@ -157,8 +158,9 @@ class TestRequestPayloadFactory(testtools.TestCase):
             self.factory.create, Operation.POLL)
 
     def test_create_notify_payload(self):
-        self._test_not_implemented(
-            self.factory.create, Operation.NOTIFY)
+        payload = self.factory.create(Operation.NOTIFY)
+        self._test_payload_type(
+            payload, notify.NotifyRequestPayload)
 
     def test_create_put_payload(self):
         self._test_not_implemented(
