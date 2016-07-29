@@ -989,4 +989,5 @@ class ContactInformation(TextString):
 class CustomAttribute(TextString):
 
     def __init__(self, value=None):
-        super(CustomAttribute, self).__init__(value, Tags.ATTRIBUTE_VALUE)
+        super(CustomAttribute, self).__init__(
+            value, Tags.ATTRIBUTE_VALUE)
