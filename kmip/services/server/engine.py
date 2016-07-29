@@ -79,7 +79,9 @@ class KmipEngine(object):
         * Cryptographic usage mask enforcement per object type
     """
 
-    def __init__(self, db_url='sqlite:////tmp/pykmip.database', logstream=None):
+    def __init__(self,
+                 db_url='sqlite:////tmp/pykmip.database',
+                 logstream=None):
         """
         Create a KmipEngine.
         """
@@ -747,6 +749,8 @@ class KmipEngine(object):
             return self._process_get_attribute_list(payload)
         elif operation == enums.Operation.ADD_ATTRIBUTE:
             return self._process_add_attribute(payload)
+        elif operation == enums.Operation.NOTIFY:
+            return self._process_notify(payload)
         else:
             raise exceptions.OperationNotSupported(
                 "{0} operation is not supported by the server.".format(
@@ -1342,5 +1346,26 @@ class KmipEngine(object):
             uid=unique_identifier,
             attribute=attribute
         )
+
+        return response_payload
+
+    def _process_notify(self, payload):
+        self._logger.info("Processing operation: Notify")
+        '''
+        TODO: here 'server' as 'client' has to process Notify
+
+        unique_identifier = self._id_placeholder
+        if payload.uid:
+            unique_identifier = payload.uid
+
+        attributes = payload.attributes
+
+        object_type = self._get_object_type(unique_identifier)
+
+        managed_object = self._data_session.query(object_type).filter(
+            object_type.unique_identifier == unique_identifier
+        ).one()
+        '''
+        response_payload = None
 
         return response_payload

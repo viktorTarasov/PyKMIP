@@ -337,3 +337,13 @@ class AddAttributeResult(OperationResult):
             if self.attribute is None:
                 raise TypeError(
                     "Attribute is mandatory for result with SUCCESS status")
+
+
+class NotifyResult(OperationResult):
+
+    def __init__(self,
+                 result_status,
+                 result_reason=None,
+                 result_message=None):
+        super(NotifyResult, self).__init__(
+            result_status, result_reason, result_message)
