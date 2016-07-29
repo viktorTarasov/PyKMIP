@@ -13,6 +13,12 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import os
+import logging
+import logging.config
+import socket
+import ssl
+
 from kmip.services.results import ActivateResult
 from kmip.services.results import AddAttributeResult
 from kmip.services.results import CreateResult
@@ -22,6 +28,7 @@ from kmip.services.results import DiscoverVersionsResult
 from kmip.services.results import GetResult
 from kmip.services.results import GetAttributeListResult
 from kmip.services.results import LocateResult
+from kmip.services.results import NotifyResult
 from kmip.services.results import OperationResult
 from kmip.services.results import QueryResult
 from kmip.services.results import RegisterResult
@@ -40,12 +47,12 @@ from kmip.core.factories.credentials import CredentialFactory
 from kmip.core import objects
 from kmip.core.server import KMIP
 
+from kmip.core.messages import messages
 from kmip.core.messages.contents import Authentication
 from kmip.core.messages.contents import BatchCount
 from kmip.core.messages.contents import Operation
 from kmip.core.messages.contents import ProtocolVersion
-
-from kmip.core.messages import messages
+from kmip.core.messages.contents import UniqueBatchItemID
 
 from kmip.core.messages.payloads import activate
 from kmip.core.messages.payloads import add_attribute
@@ -56,6 +63,7 @@ from kmip.core.messages.payloads import discover_versions
 from kmip.core.messages.payloads import get
 from kmip.core.messages.payloads import get_attribute_list
 from kmip.core.messages.payloads import locate
+from kmip.core.messages.payloads import notify
 from kmip.core.messages.payloads import query
 from kmip.core.messages.payloads import rekey_key_pair
 from kmip.core.messages.payloads import register
@@ -66,12 +74,6 @@ from kmip.services.server.kmip_protocol import KMIPProtocol
 from kmip.core.config_helper import ConfigHelper
 
 from kmip.core.utils import BytearrayStream
-
-import logging
-import logging.config
-import os
-import socket
-import ssl
 
 FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 CONFIG_FILE = os.path.normpath(os.path.join(FILE_PATH, '../kmipconfig.ini'))
@@ -401,6 +403,21 @@ class KMIPProxy(KMIP):
         results = self._process_batch_items(response)
         return results[0]
 
+    def notify(self, uids, attributes):
+        batch_items = list()
+        batch_uids = dict()
+        for uid in uids:
+            batch_uids[uid] = UniqueBatchItemID(os.urandom(8))
+            batch_item = self._build_notify_batch_item(uid,
+                                                       batch_uids[uid],
+                                                       attributes)
+            batch_items.append(batch_item)
+
+        request = self._build_request_message(None, batch_items)
+        response = self._send_and_receive_message(request)
+        results = self._process_batch_items(response)
+        return results
+
     def _create(self,
                 object_type=None,
                 template_attribute=None,
@@ -500,6 +517,16 @@ class KMIPProxy(KMIP):
             operation=operation, request_payload=payload)
         return batch_item
 
+    def _build_notify_batch_item(self, uid=None, batch_item_id=None,
+                                 attributes=None):
+        operation = Operation(OperationEnum.NOTIFY)
+        payload = notify.NotifyRequestPayload(uid, attributes)
+        batch_item = messages.RequestBatchItem(
+            operation=operation,
+            unique_batch_item_id=batch_item_id,
+            request_payload=payload)
+        return batch_item
+
     def _process_batch_items(self, response):
         results = []
         for batch_item in response.batch_items:
@@ -526,6 +553,8 @@ class KMIPProxy(KMIP):
             return self._process_query_batch_item
         elif operation == OperationEnum.DISCOVER_VERSIONS:
             return self._process_discover_versions_batch_item
+        elif operation == OperationEnum.NOTIFY:
+            return self._process_notify_batch_item
         else:
             raise ValueError("no processor for operation: {0}".format(
                 operation))
@@ -631,6 +660,12 @@ class KMIPProxy(KMIP):
             batch_item.result_message,
             uid,
             attribute)
+
+    def _process_notify_batch_item(self, batch_item):
+        result = NotifyResult(
+            batch_item.result_status, batch_item.result_reason,
+            batch_item.result_message)
+        return result
 
     def _process_response_error(self, batch_item):
         result = OperationResult(

@@ -413,6 +413,44 @@ class ProxyKmipClient(api.KmipClient):
             message = result.result_message.value
             raise exceptions.KmipOperationFailure(status, reason, message)
 
+    def notify(self, subject, contact_information, uids, attributes):
+        """
+        Notify changed attributes of managed object to client
+
+        Args:
+            attributes (list): attributes that have been changed
+            uid (string): The unique ID of the managed object with which the
+                retrieved attribute names should be associated. Optional,
+                defaults to None.
+        """
+        # Check input
+        if uids is not None:
+            if not isinstance(uids, list):
+                raise TypeError("uids must be a list of strings")
+        for uid in uids:
+            if not isinstance(uid, six.string_types):
+                raise TypeError("uid must be a string")
+
+        # Verify that operations can be given at this time
+        if not self._is_open:
+            raise exceptions.ClientConnectionNotOpen()
+
+        attrs = list()
+        for attribute in attributes:
+            attr = self.attribute_factory.create_attribute(
+                attribute['attribute_type'], attribute['attribute_value'])
+            attrs.append(attr)
+
+        # Get the list of attribute names for a managed object.
+        notify_results = self.proxy.notify(uids, attrs)
+
+        for result in notify_results:
+            status = result.result_status.value
+            if status != enums.ResultStatus.SUCCESS:
+                reason = result.result_reason.value
+                message = result.result_message.value
+                raise exceptions.KmipOperationFailure(status, reason, message)
+
     def _build_key_attributes(self, algorithm, length):
         # Build a list of core key attributes.
         algorithm_attribute = self.attribute_factory.create_attribute(
