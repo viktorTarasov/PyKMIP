@@ -314,6 +314,15 @@ def build_cli_parser(operation=None):
             default=None,
             dest="pkcs12_password",
             help="PKCS#12 password")
+    elif operation is Operation.REKEY_KEY_PAIR:
+        parser.add_option(
+            "-i",
+            "--uuid",
+            action="store",
+            type="str",
+            default=None,
+            dest="uuid",
+            help="UID of key object to re-key")
     return parser
 
 
