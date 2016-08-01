@@ -21,6 +21,8 @@ from kmip.core.objects import Attribute
 
 from kmip.core import utils
 
+from kmip.core.enums import AttributeType
+
 
 class AttributeFactory(object):
 
@@ -54,3 +56,7 @@ class AttributeFactory(object):
             raise TypeError(msg)
 
         return self._create_attribute(name, value, index)
+
+    def create_link_attribute(self, link_type, value, index=None):
+        link_value = [link_type, value]
+        return self.create_attribute(AttributeType.LINK, link_value, index)
