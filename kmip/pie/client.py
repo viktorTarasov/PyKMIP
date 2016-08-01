@@ -18,7 +18,7 @@ import six
 
 from kmip.core import enums
 from kmip.core import objects as cobjects
-
+from kmip.core.attributes import PrivateKeyUniqueIdentifier
 from kmip.core.factories import attributes
 
 from kmip.pie import api
@@ -450,6 +450,46 @@ class ProxyKmipClient(api.KmipClient):
                 reason = result.result_reason.value
                 message = result.result_message.value
                 raise exceptions.KmipOperationFailure(status, reason, message)
+
+    def rekey_key_pair(self, uuid):
+        """
+        ReKey an asymmetric key pair on a KMIP appliance.
+
+        Args:
+            uuid (string): uid of private key object to re-key
+
+        Returns:
+            string: The uid of the newly created public key.
+            string: The uid of the newly created private key.
+
+        Raises:
+            ClientConnectionNotOpen: if the client connection is unusable
+            KmipOperationFailure: if the operation result is a failure
+            TypeError: if the input arguments are invalid
+        """
+        # Check inputs
+        if not isinstance(uuid, six.string_types):
+            raise TypeError("UUID has to be a string")
+
+        # Verify that operations can be given at this time
+        if not self._is_open:
+            raise exceptions.ClientConnectionNotOpen()
+
+        # Create the template containing the attributes
+        private_key_uuid = PrivateKeyUniqueIdentifier(uuid)
+
+        # Create the asymmetric key pair and handle the results
+        result = self.proxy.rekey_key_pair(private_key_uuid=private_key_uuid)
+
+        status = result.result_status.value
+        if status == enums.ResultStatus.SUCCESS:
+            public_uid = result.public_key_uuid.value
+            private_uid = result.private_key_uuid.value
+            return public_uid, private_uid
+        else:
+            reason = result.result_reason.value
+            message = result.result_message.value
+            raise exceptions.KmipOperationFailure(status, reason, message)
 
     def _build_key_attributes(self, algorithm, length):
         # Build a list of core key attributes.
