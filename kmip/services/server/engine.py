@@ -751,6 +751,8 @@ class KmipEngine(object):
             return self._process_add_attribute(payload)
         elif operation == enums.Operation.NOTIFY:
             return self._process_notify(payload)
+        elif operation == enums.Operation.REKEY_KEY_PAIR:
+            return self._process_rekey_key_pair(payload)
         else:
             raise exceptions.OperationNotSupported(
                 "{0} operation is not supported by the server.".format(
@@ -1121,6 +1123,193 @@ class KmipEngine(object):
 
         self._id_placeholder = str(managed_object.unique_identifier)
 
+        return response_payload
+
+    @_kmip_version_supported('1.0')
+    def _process_rekey_key_pair(self, payload):
+        self._logger.info("Processing operation: RekeyKeyPair")
+
+        # Process attribute sets
+        replaced_uuid = None
+        # TODO offset = None
+        public_key_attributes = {}
+        private_key_attributes = {}
+        common_attributes = {}
+
+        if payload.private_key_uuid:
+            replaced_uuid = payload.private_key_uuid.value
+        # TODO  if payload.offset:
+        #           offset = payload.offset
+        if payload.public_key_template_attribute:
+            public_key_attributes = self._process_template_attribute(
+                payload.public_key_template_attribute
+            )
+        if payload.private_key_template_attribute:
+            private_key_attributes = self._process_template_attribute(
+                payload.private_key_template_attribute
+            )
+        if payload.common_template_attribute:
+            common_attributes = self._process_template_attribute(
+                payload.common_template_attribute
+            )
+
+        # Propagate common attributes if not overridden by the public/private
+        # attribute sets
+        for key, value in six.iteritems(common_attributes):
+            if key not in public_key_attributes.keys():
+                public_key_attributes.update([(key, value)])
+            if key not in private_key_attributes.keys():
+                private_key_attributes.update([(key, value)])
+
+        # Get replaced PrivateKey object
+        replaced_private_key = self._data_session.query(objects.PrivateKey) \
+            .filter(objects.PrivateKey.unique_identifier == replaced_uuid)  \
+            .one()
+
+        # Get replaced PublicKey object
+        for link in replaced_private_key.links:
+            print("_process_rekey_key_pair() link {0}".format(link))
+            if link.link_type.value == LinkType.PUBLIC_KEY_LINK:
+                replaced_public_key =                               \
+                    self._data_session.query(objects.PublicKey) \
+                    .filter(objects.PublicKey.unique_identifier ==
+                            link.linked_oid.value) \
+                    .one()
+            if link.link_type.value == LinkType.REPLACEMENT_OBJECT_LINK:
+                raise exceptions.IllegalOperation(
+                    "PrivateKey(uuid={0}) has alredy been replaced.".format(
+                        replaced_uuid))
+
+        self._logger.info("Re-Key PrivateKey {0} and PublicKey {1}".format(
+            replaced_private_key.unique_identifier,
+            replaced_public_key.unique_identifier))
+
+        # Create private and public key blobs
+        public, private = self._cryptography_engine.create_asymmetric_key_pair(
+            replaced_private_key.cryptographic_algorithm,
+            replaced_private_key.cryptographic_length
+        )
+
+        # Create key Managed Objects
+        private_key = objects.PrivateKey(
+            replaced_private_key.cryptographic_algorithm,
+            replaced_private_key.cryptographic_length,
+            private.get('value'),
+            private.get('format')
+        )
+        public_key = objects.PublicKey(
+            replaced_public_key.cryptographic_algorithm,
+            replaced_public_key.cryptographic_length,
+            public.get('value'),
+            public.get('format')
+        )
+        public_key.names = []
+        private_key.names = []
+
+        # Add link to replaced private key
+        ln_replaced_prvkey = self._attribute_factory.create_link_attribute(
+            LinkType.REPLACED_OBJECT_LINK,
+            replaced_private_key.unique_identifier)
+        private_key_attributes[ln_replaced_prvkey.attribute_name.value] = \
+            ln_replaced_prvkey.attribute_value
+        self._set_attributes_on_managed_object(
+            private_key,
+            private_key_attributes
+        )
+
+        # Add link to replaced public key
+        ln_replaced_pubkey = self._attribute_factory.create_link_attribute(
+            LinkType.REPLACED_OBJECT_LINK,
+            replaced_public_key.unique_identifier)
+        public_key_attributes[ln_replaced_pubkey.attribute_name.value] = \
+            ln_replaced_pubkey.attribute_value
+        self._set_attributes_on_managed_object(
+            public_key,
+            public_key_attributes
+        )
+
+        # TODO (peterhamilton) Set additional server-only attributes.
+
+        self._data_session.add(public_key)
+        self._data_session.add(private_key)
+
+        # NOTE (peterhamilton) SQLAlchemy will *not* assign an ID until
+        # commit is called. This makes future support for UNDO problematic.
+        self._data_session.commit()
+
+        # For a new replacement PrivateKey object set link to PublicKey
+        ln_pubkey = self._attribute_factory.create_link_attribute(
+            LinkType.PUBLIC_KEY_LINK,
+            public_key.unique_identifier)
+        private_key_server_attributes = {
+            ln_pubkey.attribute_name.value: ln_pubkey.attribute_value,
+        }
+        self._set_attributes_on_managed_object(
+            private_key,
+            private_key_server_attributes
+        )
+
+        # For a new replacement PublicKey object set link to PrivateKey
+        ln_prvkey = self._attribute_factory.create_link_attribute(
+            LinkType.PRIVATE_KEY_LINK,
+            private_key.unique_identifier)
+        public_key_server_attributes = {
+            ln_prvkey.attribute_name.value: ln_prvkey.attribute_value,
+        }
+        self._set_attributes_on_managed_object(
+            public_key,
+            public_key_server_attributes
+        )
+
+        # For replaced PrivateKey object set link to replacement object
+        ln_replacement = self._attribute_factory.create_link_attribute(
+            LinkType.REPLACEMENT_OBJECT_LINK,
+            private_key.unique_identifier)
+        replacement_attributes = {
+            ln_replacement.attribute_name.value:
+            ln_replacement.attribute_value,
+        }
+        self._set_attributes_on_managed_object(
+            replaced_private_key,
+            replacement_attributes
+        )
+
+        # For replaced PublicKey object set link to replacement object
+        ln_replacement = self._attribute_factory.create_link_attribute(
+            LinkType.REPLACEMENT_OBJECT_LINK,
+            public_key.unique_identifier)
+        replacement_attributes = {
+            ln_replacement.attribute_name.value:
+            ln_replacement.attribute_value,
+        }
+        self._set_attributes_on_managed_object(
+            replaced_public_key,
+            replacement_attributes
+        )
+
+        self._data_session.commit()
+
+        self._logger.info(
+            "Created a PublicKey with ID: {0}".format(
+                public_key.unique_identifier
+            )
+        )
+        self._logger.info(
+            "Created a PrivateKey with ID: {0}".format(
+                private_key.unique_identifier
+            )
+        )
+
+        response_payload = create_key_pair.CreateKeyPairResponsePayload(
+            private_key_uuid=attributes.PrivateKeyUniqueIdentifier(
+                str(private_key.unique_identifier)
+            ),
+            public_key_uuid=attributes.PublicKeyUniqueIdentifier(
+                str(public_key.unique_identifier)
+            )
+        )
+
+        self._id_placeholder = str(private_key.unique_identifier)
         return response_payload
 
     @_kmip_version_supported('1.0')
