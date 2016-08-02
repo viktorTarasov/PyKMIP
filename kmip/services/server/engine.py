@@ -31,6 +31,8 @@ from kmip.core.factories import secrets
 
 from kmip.core import objects as core_objects
 
+from kmip.core.enums import LinkType
+
 from kmip.core.messages import contents
 from kmip.core.messages import messages
 
@@ -88,6 +90,7 @@ class KmipEngine(object):
         self._logger = logging.getLogger('kmip.server.engine')
         if logstream is not None:
             self._logger.addHandler(logstream)
+            self._logger.setLevel(logstream.level)
 
         self._cryptography_engine = engine.CryptographyEngine()
 
@@ -676,7 +679,7 @@ class KmipEngine(object):
 
         # return if crypto-object already contains the link to public key
         links = list(filter(
-            lambda x: x.link_type.value == enums.LinkType.PUBLIC_KEY_LINK,
+            lambda x: x.link_type.value == LinkType.PUBLIC_KEY_LINK,
             certificate.links))
         if len(links) == 1:
             return
@@ -704,12 +707,9 @@ class KmipEngine(object):
                 m_public_key.unique_identifier))
 
         # For Private Key object set link to Public Key
-        link_to_pubkey = self._attribute_factory.create_attribute(
-                enums.AttributeType.LINK,
-                [
-                    enums.LinkType.PUBLIC_KEY_LINK,
-                    m_public_key.unique_identifier
-                ])
+        link_to_pubkey = self._attribute_factory.create_link_attribute(
+            LinkType.PUBLIC_KEY_LINK,
+            m_public_key.unique_identifier)
         certificate_server_attributes = {
             link_to_pubkey.attribute_name.value: link_to_pubkey.attribute_value
         }
@@ -1006,12 +1006,9 @@ class KmipEngine(object):
         self._data_session.commit()
 
         # For Private Key object set link to Public Key
-        ln_pubkey = self._attribute_factory.create_attribute(
-                enums.AttributeType.LINK,
-                [
-                    enums.LinkType.PUBLIC_KEY_LINK,
-                    public_key.unique_identifier
-                ])
+        ln_pubkey = self._attribute_factory.create_link_attribute(
+            LinkType.PUBLIC_KEY_LINK,
+            public_key.unique_identifier)
         private_key_server_attributes = {
             ln_pubkey.attribute_name.value: ln_pubkey.attribute_value
         }
@@ -1021,12 +1018,9 @@ class KmipEngine(object):
         )
 
         # For Public Key object set link to Private Key
-        ln_prvkey = self._attribute_factory.create_attribute(
-                enums.AttributeType.LINK,
-                [
-                    enums.LinkType.PRIVATE_KEY_LINK,
-                    private_key.unique_identifier
-                ])
+        ln_prvkey = self._attribute_factory.create_link_attribute(
+            enums.LinkType.PRIVATE_KEY_LINK,
+            private_key.unique_identifier)
         public_key_server_attributes = {
             ln_prvkey.attribute_name.value: ln_prvkey.attribute_value
         }
