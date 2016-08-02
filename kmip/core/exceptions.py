@@ -203,6 +203,25 @@ class PermissionDenied(KmipError):
         )
 
 
+class IllegalOperation(KmipError):
+    """
+    The client requested an operation that was not able to be performed with
+    the specified parameters.
+    """
+
+    def __init__(self, message):
+        """
+        Create a IllegalOperation exception.
+
+        Args:
+            message (string): A string containing information about the error.
+        """
+        super(IllegalOperation, self).__init__(
+            reason=enums.ResultReason.ILLEGAL_OPERATION,
+            message=message
+        )
+
+
 class ConfigurationError(Exception):
     """
     An error generated when a problem occurs with a client or server
