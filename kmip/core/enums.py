@@ -513,6 +513,13 @@ class LinkType(enum.Enum):
     PREVIOUS_LINK               = 0x0000010A
     NEXT_LINK                   = 0x0000010B
 
+#9.1.3.2.22
+class CertificateRequestType(enum.Enum):
+    CRMF    = 0x00000001
+    PKCS10  = 0x00000002
+    PEM     = 0x00000003
+    PGP     = 0x00000004    # deprecated
+
 # 9.1.3.2.24
 class QueryFunction(enum.Enum):
     QUERY_OPERATIONS             = 0x00000001
