@@ -17,6 +17,7 @@ from kmip.core.factories.payloads import PayloadFactory
 
 from kmip.core.messages.payloads import activate
 from kmip.core.messages.payloads import add_attribute
+from kmip.core.messages.payloads import certify
 from kmip.core.messages.payloads import create
 from kmip.core.messages.payloads import create_key_pair
 from kmip.core.messages.payloads import destroy
@@ -74,3 +75,6 @@ class RequestPayloadFactory(PayloadFactory):
 
     def _create_notify_payload(self):
         return notify.NotifyRequestPayload()
+
+    def _create_certify_payload(self):
+        return certify.CertifyRequestPayload()
