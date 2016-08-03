@@ -20,6 +20,7 @@ from kmip.core.factories.payloads.request import RequestPayloadFactory
 
 from kmip.core.messages.payloads import activate
 from kmip.core.messages.payloads import add_attribute
+from kmip.core.messages.payloads import certify
 from kmip.core.messages.payloads import create
 from kmip.core.messages.payloads import create_key_pair
 from kmip.core.messages.payloads import destroy
@@ -72,8 +73,9 @@ class TestRequestPayloadFactory(testtools.TestCase):
             self.factory.create, Operation.DERIVE_KEY)
 
     def test_create_certify_payload(self):
-        self._test_not_implemented(
-            self.factory.create, Operation.CERTIFY)
+        payload = self.factory.create(Operation.CERTIFY)
+        self._test_payload_type(
+            payload, certify.CertifyRequestPayload)
 
     def test_create_recertify_payload(self):
         self._test_not_implemented(
