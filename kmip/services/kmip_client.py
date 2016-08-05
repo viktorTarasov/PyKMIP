@@ -21,6 +21,7 @@ import ssl
 
 from kmip.services.results import ActivateResult
 from kmip.services.results import AddAttributeResult
+from kmip.services.results import CertifyResult
 from kmip.services.results import CreateResult
 from kmip.services.results import CreateKeyPairResult
 from kmip.services.results import DestroyResult
@@ -56,6 +57,7 @@ from kmip.core.messages.contents import UniqueBatchItemID
 
 from kmip.core.messages.payloads import activate
 from kmip.core.messages.payloads import add_attribute
+from kmip.core.messages.payloads import certify
 from kmip.core.messages.payloads import create
 from kmip.core.messages.payloads import create_key_pair
 from kmip.core.messages.payloads import destroy
@@ -350,6 +352,17 @@ class KMIPProxy(KMIP):
             results = self._process_batch_items(response)
             return results[0]
 
+    def certify(self, uid=None, request_type=None, request=None,
+                template_attribute=None, credential=None):
+        batch_item = self._build_certify_batch_item(
+            uid=uid, request_type=request_type, request=request,
+            template_attribute=template_attribute)
+
+        request = self._build_request_message(credential, [batch_item])
+        response = self._send_and_receive_message(request)
+        results = self._process_batch_items(response)
+        return results[0]
+
     def locate(self, maximum_items=None, storage_status_mask=None,
                object_group_member=None, attributes=None, credential=None):
         return self._locate(maximum_items=maximum_items,
@@ -486,6 +499,20 @@ class KMIPProxy(KMIP):
             operation=operation, request_payload=payload)
         return batch_item
 
+    def _build_certify_batch_item(self, uid=None, request_type=None,
+                                  request=None, template_attribute=None):
+        operation = Operation(OperationEnum.CERTIFY)
+
+        payload = certify.CertifyRequestPayload(
+            uid=uid,
+            certificate_request_type=request_type,
+            certificate_request=request,
+            template_attribute=template_attribute)
+
+        batch_item = messages.RequestBatchItem(
+            operation=operation, request_payload=payload)
+        return batch_item
+
     def _build_query_batch_item(self, query_functions=None):
         operation = Operation(OperationEnum.QUERY)
         payload = query.QueryRequestPayload(query_functions)
@@ -555,6 +582,8 @@ class KMIPProxy(KMIP):
             return self._process_discover_versions_batch_item
         elif operation == OperationEnum.NOTIFY:
             return self._process_notify_batch_item
+        elif operation == OperationEnum.CERTIFY:
+            return self._process_certify_batch_item
         else:
             raise ValueError("no processor for operation: {0}".format(
                 operation))
@@ -598,6 +627,19 @@ class KMIPProxy(KMIP):
                       payload_private_key_template_attribute,
                       payload_public_key_template_attribute)
 
+    def _process_uuid_and_template_batch_item(self, batch_item, result):
+        payload = batch_item.response_payload
+
+        uuid = None
+        template_attribute = None
+
+        if payload is not None:
+            uuid = payload.uid
+            template_attribute = payload.template_attribute
+
+        return result(batch_item.result_status, batch_item.result_reason,
+                      batch_item.result_message, uuid, template_attribute)
+
     def _process_create_key_pair_batch_item(self, batch_item):
         return self._process_key_pair_batch_item(
             batch_item, CreateKeyPairResult)
@@ -605,6 +647,23 @@ class KMIPProxy(KMIP):
     def _process_rekey_key_pair_batch_item(self, batch_item):
         return self._process_key_pair_batch_item(
             batch_item, RekeyKeyPairResult)
+
+    def _process_certify_batch_item(self, batch_item):
+        payload = batch_item.response_payload
+
+        uuid = None
+        template_attribute = None
+
+        if payload is not None:
+            uuid = payload.uid
+            template_attribute = payload.template_attribute
+
+        return CertifyResult(
+            batch_item.result_status,
+            batch_item.result_reason,
+            batch_item.result_message,
+            uuid,
+            template_attribute)
 
     def _process_query_batch_item(self, batch_item):
         payload = batch_item.response_payload

@@ -491,6 +491,48 @@ class ProxyKmipClient(api.KmipClient):
             message = result.result_message.value
             raise exceptions.KmipOperationFailure(status, reason, message)
 
+    def certify(self, uid, request_type, request, template_attribute):
+        """
+        Generate a Certificate object for a public key.
+
+        Args:
+            uid (string): uid of PublicKey object to be certified
+
+        Returns:
+            string: The uid of the newly created Certificate.
+
+        Raises:
+            ClientConnectionNotOpen: if the client connection is unusable
+            KmipOperationFailure: if the operation result is a failure
+            TypeError: if the input arguments are invalid
+        """
+        # Check inputs
+        if uid is not None:
+            if not isinstance(uid, six.string_types):
+                raise TypeError("UUID has to be a string")
+
+        # Verify that operations can be given at this time
+        if not self._is_open:
+            raise exceptions.ClientConnectionNotOpen()
+
+        # Create the template containing the attributes
+        # template_attribuite = cobjects.TemplateAttribute()
+
+        # Create the asymmetric key pair and handle the results
+        result = self.proxy.certify(
+            uid=uid,
+            request_type=request_type,
+            request=request,
+            template_attribute=template_attribute)
+
+        status = result.result_status.value
+        if status == enums.ResultStatus.SUCCESS:
+            return result.uid
+        else:
+            reason = result.result_reason.value
+            message = result.result_message.value
+            raise exceptions.KmipOperationFailure(status, reason, message)
+
     def _build_key_attributes(self, algorithm, length):
         # Build a list of core key attributes.
         algorithm_attribute = self.attribute_factory.create_attribute(
