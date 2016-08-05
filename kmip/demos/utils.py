@@ -323,6 +323,47 @@ def build_cli_parser(operation=None):
             default=None,
             dest="uuid",
             help="UID of key object to re-key")
+    elif operation is Operation.CERTIFY:
+        parser.add_option(
+            "-i",
+            "--uuid",
+            action="store",
+            type="str",
+            default=None,
+            dest="uuid",
+            help="UID of key object to re-key")
+        parser.add_option(
+            "",
+            "--pkcs10-file",
+            action="store",
+            type="str",
+            default=None,
+            dest="pkcs10_file",
+            help="file with PKCS#10 in DER format")
+        parser.add_option(
+            "",
+            "--in-format",
+            action="store",
+            type="str",
+            default=None,
+            dest="in_format",
+            help="format of request file: PEM or DER")
+        parser.add_option(
+            "",
+            "--subject-alternative-name",
+            action="store",
+            type="str",
+            default=None,
+            dest="subject_alternative_name",
+            help="X509v3 Subject Alternative Name")
+        parser.add_option(
+            "",
+            "--subject-distinguished-name",
+            action="store",
+            type="str",
+            default=None,
+            dest="subject_distinguished_name",
+            help="X509v3 Certificate Subject DN")
     return parser
 
 
