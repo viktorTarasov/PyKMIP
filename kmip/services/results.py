@@ -339,6 +339,31 @@ class AddAttributeResult(OperationResult):
                     "Attribute is mandatory for result with SUCCESS status")
 
 
+class CertifyResult(OperationResult):
+
+    def __init__(
+            self,
+            result_status,
+            result_reason=None,
+            result_message=None,
+            uid=None,
+            template_attribute=None):
+        super(CertifyResult, self).__init__(
+            result_status, result_reason, result_message)
+        self.uid = uid
+        self.template_attribute = template_attribute
+
+        self.validate()
+
+    def validate(self):
+        super(CertifyResult, self).validate()
+
+        if self.result_status.value == enums.ResultStatus.SUCCESS:
+            if self.uid is None:
+                raise TypeError(
+                    "UID is mandatory for result with SUCCESS status")
+
+
 class NotifyResult(OperationResult):
 
     def __init__(self,
