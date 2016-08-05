@@ -37,6 +37,7 @@ from kmip.core.messages import contents
 from kmip.core.messages import messages
 
 from kmip.core.messages.payloads import add_attribute
+from kmip.core.messages.payloads import certify
 from kmip.core.messages.payloads import create
 from kmip.core.messages.payloads import create_key_pair
 from kmip.core.messages.payloads import destroy
@@ -753,6 +754,8 @@ class KmipEngine(object):
             return self._process_notify(payload)
         elif operation == enums.Operation.REKEY_KEY_PAIR:
             return self._process_rekey_key_pair(payload)
+        elif operation == enums.Operation.CERTIFY:
+            return self._process_certify(payload)
         else:
             raise exceptions.OperationNotSupported(
                 "{0} operation is not supported by the server.".format(
@@ -1310,6 +1313,31 @@ class KmipEngine(object):
         )
 
         self._id_placeholder = str(private_key.unique_identifier)
+        return response_payload
+
+    @_kmip_version_supported('1.0')
+    def _process_certify(self, payload):
+        self._logger.info("Processing operation: Certify")
+
+        # Process attribute sets
+        uid = None
+        certificate_request = None
+        certificate_request_type = None
+        attributes = {}
+
+        if payload.uid:
+            uid = payload.uid
+        if payload.certificate_request:
+            certificate_request = payload.certificate_request
+        if payload.certificate_request_type:
+            certificate_request_type = payload.certificate_request_type.value
+        if payload.template_attribute:
+            attributes = self._process_template_attribute(
+                payload.template_attribute)
+
+        uuid = 'coucou'
+        response_payload = certify.CertifyResponsePayload(uuid)
+        self._id_placeholder = str(uuid)
         return response_payload
 
     @_kmip_version_supported('1.0')
