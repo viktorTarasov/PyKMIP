@@ -59,6 +59,7 @@ class AttributeType(enum.Enum):
     CONTACT_INFORMATION              = 'Contact Information'
     LAST_CHANGE_DATE                 = 'Last Change Date'
     CUSTOM_ATTRIBUTE                 = 'Custom Attribute'
+    ALTERNATIVE_NAME                 = 'Alternative Name'
 
 
 class ConformanceClause(enum.Enum):
@@ -300,6 +301,9 @@ class Tags(enum.Enum):
     X_509_CERTIFICATE_IDENTIFER            = 0x4200B5
     X_509_CERTIFICATE_ISSUER               = 0x4200B6
     X_509_CERTIFICATE_SUBJECT              = 0x4200B7
+    ALTERNATIVE_NAME                       = 0x4200BF
+    ALTERNATIVE_NAME_VALUE                 = 0x4200C0
+    ALTERNATIVE_NAME_TYPE                  = 0x4200C1
 
 
 # 9.1.3.2.1
@@ -606,6 +610,15 @@ class EncodingOption(enum.Enum):
     NO_ENCODING   = 0x00000001
     TTLV_ENCODING = 0x00000002
 
+# 9.1.3.2.34
+class AlternativeNameType(enum.Enum):
+    UNINTERPRETED_TEXT_STRING = 0x00000001
+    URI                       = 0x00000002
+    OBJECT_SERIAL_NUMBER      = 0x00000003
+    EMAIL_ADDRESS             = 0x00000004
+    DNS_NAME                  = 0x00000005
+    X_500_DISTINGUISHED_NAME  = 0x00000006
+    IP_ADDRESS                = 0x00000007
 
 # 9.1.3.3
 # 9.1.3.3.1
