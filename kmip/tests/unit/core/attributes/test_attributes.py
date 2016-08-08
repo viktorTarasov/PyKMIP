@@ -15,6 +15,7 @@
 
 from testtools import TestCase
 
+from kmip.core.attributes import AlternativeName
 from kmip.core.attributes import ApplicationData
 from kmip.core.attributes import ApplicationNamespace
 from kmip.core.attributes import CertificateType
@@ -28,6 +29,7 @@ from kmip.core.attributes import Tags
 
 from kmip.core.factories.attribute_values import AttributeValueFactory
 
+from kmip.core.enums import AlternativeNameType
 from kmip.core.enums import AttributeType
 from kmip.core.enums import BlockCipherMode
 from kmip.core.enums import CertificateTypeEnum
@@ -796,3 +798,201 @@ class TestLink(TestCase):
         link = Link(None, None)
         link.read(self.blob_link)
         self.assertEqual(link, self.link)
+
+
+class TestAlternativeNameType(TestCase):
+
+    def setUp(self):
+        super(TestAlternativeNameType, self).setUp()
+        self.type_uri = AlternativeNameType.URI
+        self.type_dns = AlternativeNameType.DNS_NAME
+
+    def tearDown(self):
+        super(TestAlternativeNameType, self).tearDown()
+
+    def test__eq(self):
+        an_type = AlternativeName.AlternativeNameType(self.type_uri)
+        same_an_type = AlternativeName.AlternativeNameType(self.type_uri)
+        other_an_type = AlternativeName.AlternativeNameType(self.type_dns)
+
+        self.assertTrue(an_type == same_an_type)
+        self.assertFalse(same_an_type == other_an_type)
+        self.assertFalse(an_type == 'invalid')
+
+    def test__str(self):
+        an_type = AlternativeName.AlternativeNameType(self.type_uri)
+        str_an_type = "{0}".format(an_type)
+        repr_an_type = "AlternativeNameType(value=<{0}: {1}>)".format(
+                self.type_uri,
+                self.type_uri.value)
+
+        self.assertEqual(str_an_type, str(an_type))
+        self.assertEqual(repr_an_type, repr(an_type))
+
+
+class TestAlternativeNameValue(TestCase):
+
+    def setUp(self):
+        super(TestAlternativeNameValue, self).setUp()
+        self.nv_uri = 'https://github.com/OpenKMIP/PyKMIP/'
+        self.nv_dns = 'github.com'
+
+    def tearDown(self):
+        super(TestAlternativeNameValue, self).tearDown()
+
+    def test__eq(self):
+        alternative_name = AlternativeName.AlternativeNameValue(self.nv_uri)
+        same_aname = AlternativeName.AlternativeNameValue(self.nv_uri)
+        other_aname = AlternativeName.AlternativeNameValue(self.nv_dns)
+
+        self.assertTrue(alternative_name == same_aname)
+        self.assertFalse(alternative_name == other_aname)
+        self.assertFalse(alternative_name == 'invalid')
+
+    def test__str(self):
+        alternative_name = AlternativeName.AlternativeNameValue(self.nv_uri)
+        repr_alternative_name = "AlternativeNameValue(value='{0}')".format(
+            self.nv_uri)
+
+        self.assertEqual(self.nv_uri, str(alternative_name))
+        self.assertEqual(repr_alternative_name, repr(alternative_name))
+
+
+class TestAlternativeName(TestCase):
+    def setUp(self):
+        super(TestAlternativeName, self).setUp()
+        self.anv_uri_str = 'https://github.com/OpenKMIP/PyKMIP/'
+        self.anv_uri_str_with_type = 'URI:https://github.com/OpenKMIP/PyKMIP/'
+        self.anv_dns_str = 'github.com'
+        self.anv_uri = AlternativeName.AlternativeNameValue(self.anv_uri_str)
+        self.anv_dns = AlternativeName.AlternativeNameValue(self.anv_dns_str)
+
+        self.ant_uri_enum = AlternativeNameType.URI
+        self.ant_dns_enum = AlternativeNameType.DNS_NAME
+        self.ant_uri = AlternativeName.AlternativeNameType(self.ant_uri_enum)
+        self.ant_dns = AlternativeName.AlternativeNameType(self.ant_dns_enum)
+
+        # <Link>
+        #     <LinkType type="Enumeration" value="PrivateKeyLink"/>
+        #     <LinkedObjectIdentifier type="TextString" value="12"/>
+        # </Link>
+        self.blob_an_uri = BytearrayStream((
+            b'\x42\x00\xbf\x01\x00\x00\x00\x40'
+            b'\x42\x00\xc0\x07\x00\x00\x00\x23'
+            b'\x68\x74\x74\x70\x73\x3a\x2f\x2f\x67\x69\x74\x68\x75\x62\x2e\x63'
+            b'\x6f\x6d\x2f\x4f\x70\x65\x6e\x4b\x4d\x49\x50\x2f\x50\x79\x4b\x4d'
+            b'\x49\x50\x2f\x00\x00\x00\x00\x00'
+            b'\x42\x00\xc1\x05\x00\x00\x00\x04\x00\x00\x00\x02\x00\x00\x00\x00'
+        ))
+
+    def tearDown(self):
+        super(TestAlternativeName, self).tearDown()
+
+    def test_invalid_attribute_type(self):
+        """
+        Test that exception is raised when unknown attribute type is requested
+        """
+        args = ('invalid', 1234)
+        self.assertRaises(TypeError, AlternativeName.__init__, *args)
+
+    def test_empty_alternative_name(self):
+        """
+        Test empty AlternativeName
+        """
+        alternative_name = AlternativeName()
+
+        self.assertIsInstance(alternative_name, AlternativeName)
+        self.assertTrue(alternative_name.alternative_name_value is None)
+        self.assertTrue(alternative_name.alternative_name_type is None)
+
+    def test_bad_type_format(self):
+        """
+         Test that an error is raised for an incorrectly formatted type
+        """
+        alternative_name = AlternativeName()
+        alternative_name.alternative_name_value = self.anv_uri
+        alternative_name.alternative_name_type = 'invalid'
+
+        self.assertRaises(TypeError, alternative_name.validate)
+
+    def test_bad_name_format(self):
+        """
+         Test that an error is raised for an incorrectly formatted name
+        """
+        alternative_name = AlternativeName()
+        alternative_name.alternative_name_value = 'invalid'
+        alternative_name.alternative_name_type = self.ant_uri
+
+        self.assertRaises(TypeError, alternative_name.validate)
+
+    def test_init(self):
+        """
+          Test the instantiation of AlternativeName object using different
+          types of init arguments
+        """
+        an_uri = AlternativeName(self.anv_uri, self.ant_uri)
+        an_uri_name_str = AlternativeName(self.anv_uri_str, self.ant_uri)
+        an_uri_type_enum = AlternativeName(self.anv_uri, self.ant_uri_enum)
+
+        self.assertEqual(an_uri, an_uri_name_str)
+        self.assertEqual(an_uri, an_uri_type_enum)
+
+    def test_create(self):
+        """
+          Test the creation of AlternativeName object using different types of
+          'create' arguments
+        """
+        an_uri = AlternativeName.create(
+            self.anv_uri, self.ant_uri)
+        an_uri_name_str = AlternativeName.create(
+            self.anv_uri_str, self.ant_uri)
+        an_uri_type_enum = AlternativeName.create(
+            self.anv_uri, self.ant_uri_enum)
+        an_uri_name_with_type = AlternativeName.create(
+            self.anv_uri_str_with_type)
+
+        self.assertEqual(an_uri, an_uri_name_str)
+        self.assertEqual(an_uri, an_uri_type_enum)
+        self.assertEqual(an_uri, an_uri_name_with_type)
+
+    def test__eq(self):
+        an_uri = AlternativeName.create(self.anv_uri, self.ant_uri)
+        same_an_uri = AlternativeName(self.anv_uri, self.ant_uri)
+        an_dns = AlternativeName.create(self.anv_dns, self.ant_dns)
+
+        self.assertTrue(an_uri == same_an_uri)
+        self.assertFalse(an_uri == an_dns)
+        self.assertFalse(an_uri == 'invalid')
+
+    def test__ne(self):
+        an_uri = AlternativeName.create(self.anv_uri, self.ant_uri)
+        same_an_uri = AlternativeName(self.anv_uri, self.ant_uri)
+        an_dns = AlternativeName.create(self.anv_dns, self.ant_dns)
+
+        self.assertFalse(an_uri != same_an_uri)
+        self.assertTrue(an_uri != an_dns)
+        self.assertTrue(an_uri != 'invalid')
+
+    def test__str(self):
+        an_uri = AlternativeName.create(self.anv_uri, self.ant_uri)
+        repr_link_obj = "AlternativeName(type=<{0}: {1}>, value='{2}')".format(
+            self.ant_uri,
+            self.ant_uri.value.value,
+            self.anv_uri.value)
+
+        self.assertEqual(repr_link_obj, repr(an_uri))
+        self.assertEqual(repr_link_obj, str(an_uri))
+
+    def test_write(self):
+        an_uri = AlternativeName.create(self.anv_uri, self.ant_uri)
+        ostream = BytearrayStream()
+        an_uri.write(ostream)
+
+        print("Write {0}".format(ostream))
+        self.assertEqual(self.blob_an_uri, ostream)
+
+    def test_read(self):
+        an_uri = AlternativeName()
+        an_uri.read(self.blob_an_uri)
+        an_uri_ref = AlternativeName.create(self.anv_uri, self.ant_uri)
+        self.assertEqual(an_uri, an_uri_ref)

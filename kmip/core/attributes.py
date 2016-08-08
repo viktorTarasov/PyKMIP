@@ -17,6 +17,7 @@ import six
 
 from kmip.core import enums
 
+from kmip.core.enums import AlternativeNameType as AlternativeNameTypeEnum
 from kmip.core.enums import CertificateTypeEnum
 from kmip.core.enums import HashingAlgorithm as HashingAlgorithmEnum
 from kmip.core.enums import KeyFormatType as KeyFormatTypeEnum
@@ -227,7 +228,6 @@ class CryptographicLength(Integer):
             value, Tags.CRYPTOGRAPHIC_LENGTH)
 
 
-# 3.6
 class HashingAlgorithm(Enumeration):
     """
     An encodeable wrapper for the HashingAlgorithm enumeration.
@@ -250,6 +250,7 @@ class HashingAlgorithm(Enumeration):
             enums.HashingAlgorithm, value, Tags.HASHING_ALGORITHM)
 
 
+# 3.6
 class CryptographicParameters(Struct):
 
     class BlockCipherMode(Enumeration):
@@ -371,6 +372,7 @@ class CryptographicParameters(Struct):
             return NotImplemented
 
 
+# 3.8
 class CertificateType(Enumeration):
     """
     An encodeable wrapper for the CertificateType enumeration.
@@ -417,6 +419,7 @@ class DigestValue(ByteString):
         super(DigestValue, self).__init__(value, Tags.DIGEST_VALUE)
 
 
+# 3.17
 class Digest(Struct):
     """
     A structure storing a hash digest of a Managed Object.
@@ -991,3 +994,203 @@ class CustomAttribute(TextString):
     def __init__(self, value=None):
         super(CustomAttribute, self).__init__(
             value, Tags.ATTRIBUTE_VALUE)
+
+
+# 3.40
+class AlternativeName(Struct):
+
+    class AlternativeNameValue(TextString):
+
+        def __init__(self, value=None):
+            super(AlternativeName.AlternativeNameValue, self).__init__(
+                value,
+                Tags.ALTERNATIVE_NAME_VALUE)
+
+        def __eq__(self, other):
+            if isinstance(other, AlternativeName.AlternativeNameValue):
+                if self.value == other.value:
+                    return True
+                else:
+                    return False
+            else:
+                return NotImplemented
+
+        def __ne__(self, other):
+            if isinstance(other, AlternativeName.AlternativeNameValue):
+                return not self == other
+            else:
+                return NotImplemented
+
+        def __repr__(self):
+            return "{0}(value={1})".format(
+                    type(self).__name__, repr(self.value))
+
+        def __str__(self):
+            return "{0}".format(self.value)
+
+    class AlternativeNameType(Enumeration):
+
+        def __init__(self, value=None):
+            if isinstance(value, six.text_type):
+                name_type = str(value)
+                if name_type == 'email':
+                    value = AlternativeNameTypeEnum.EMAIL_ADDRESS
+                elif name_type == 'URI':
+                    value = AlternativeNameTypeEnum.URI
+                elif name_type == 'DNS':
+                    value = AlternativeNameTypeEnum.DNS_NAME
+                elif name_type == 'IP':
+                    value = AlternativeNameTypeEnum.EMAIL_ADDRESS
+
+            super(AlternativeName.AlternativeNameType, self).__init__(
+                AlternativeNameTypeEnum, value, Tags.ALTERNATIVE_NAME_TYPE)
+
+        def __eq__(self, other):
+            if isinstance(other, AlternativeName.AlternativeNameType):
+                if self.value == other.value:
+                    return True
+                else:
+                    return False
+            else:
+                return NotImplemented
+
+        def __ne__(self, other):
+            if isinstance(other, AlternativeName.AlternativeNameType):
+                return not self == other
+            else:
+                return NotImplemented
+
+        def __repr__(self):
+            return "{0}(value={1})".format(
+                    type(self).__name__, repr(self.value))
+
+        def __str__(self):
+            return "{0}".format(self.value)
+
+    def __init__(self,
+                 alternative_name_value=None,
+                 alternative_name_type=None):
+        super(AlternativeName, self).__init__(tag=Tags.ALTERNATIVE_NAME)
+
+        if isinstance(alternative_name_value, str):
+            alternative_name_value = AlternativeName.AlternativeNameValue(
+                alternative_name_value)
+
+        if isinstance(alternative_name_type, enums.AlternativeNameType):
+            alternative_name_type = AlternativeName.AlternativeNameType(
+                alternative_name_type)
+
+        self.alternative_name_value = alternative_name_value
+        self.alternative_name_type = alternative_name_type
+        self.validate()
+
+    def read(self, istream):
+        super(AlternativeName, self).read(istream)
+        tstream = BytearrayStream(istream.read(self.length))
+
+        self.alternative_name_value = AlternativeName.AlternativeNameValue()
+        self.alternative_name_type = AlternativeName.AlternativeNameType()
+
+        self.alternative_name_value.read(tstream)
+        self.alternative_name_type.read(tstream)
+
+        self.is_oversized(tstream)
+
+    def write(self, ostream):
+        tstream = BytearrayStream()
+
+        # Write the type of link and ID of linked object
+        self.alternative_name_value.write(tstream)
+        self.alternative_name_type.write(tstream)
+
+        # Write the length and value of the template attribute
+        self.length = tstream.length()
+        super(AlternativeName, self).write(ostream)
+        ostream.write(tstream.buffer)
+
+    def validate(self):
+        name = AlternativeName.__name__
+        msg = ErrorStrings.BAD_EXP_RECV
+
+        an_value = self.alternative_name_value
+        if an_value is not None:
+            if not isinstance(an_value, AlternativeName.AlternativeNameValue):
+                raise TypeError(msg.format(
+                    name, 'value', type(AlternativeName.AlternativeNameValue),
+                    type(an_value)))
+
+        an_type = self.alternative_name_type
+        if an_type is not None:
+            if not isinstance(an_type, AlternativeName.AlternativeNameType):
+                raise TypeError(msg.format(
+                    name, 'type', type(AlternativeName.AlternativeNameType),
+                    type(an_type)))
+
+    @classmethod
+    def create(cls, alternative_name_value=None, alternative_name_type=None):
+        name = cls.__name__
+        msg = ErrorStrings.BAD_EXP_RECV
+
+        if alternative_name_type is None:
+            pass
+        elif isinstance(alternative_name_type, cls.AlternativeNameType):
+            pass
+        elif isinstance(alternative_name_type, enums.AlternativeNameType):
+            alternative_name_type = cls.AlternativeNameType(
+                alternative_name_type)
+        else:
+            member = 'alternative_name_type'
+            raise TypeError(msg.format(
+                name, member, type(cls.AlternativeNameType),
+                type(alternative_name_type)))
+
+        if isinstance(alternative_name_value, cls.AlternativeNameValue):
+            pass
+        elif isinstance(alternative_name_value, six.text_type):
+            name_value = str(alternative_name_value)
+            if alternative_name_type is None:
+                if ':' in name_value:
+                    name_type, name_value = name_value.split(':', 1)
+                    alternative_name_type = cls.AlternativeNameType(name_type)
+                else:
+                    member = 'alternative_name_type'
+                    raise TypeError(msg.format(
+                        name, member, type(cls.AlternativeNameType),
+                        type(alternative_name_type)))
+
+            alternative_name_value = cls.AlternativeNameValue(name_value)
+        else:
+            member = 'alternative_name_value'
+            raise TypeError(msg.format(
+                name, member, type(cls.AlternativeNameType),
+                type(alternative_name_type)))
+
+        return cls(
+            alternative_name_value=alternative_name_value,
+            alternative_name_type=alternative_name_type)
+
+    def __repr__(self):
+        return "{0}(type={1}, value={2})".format(
+                type(self).__name__,
+                repr(self.alternative_name_type.value),
+                repr(self.alternative_name_value.value))
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __eq__(self, other):
+        if isinstance(other, AlternativeName):
+            if self.alternative_name_value != other.alternative_name_value:
+                return False
+            elif self.alternative_name_type != other.alternative_name_type:
+                return False
+            else:
+                return True
+        else:
+            return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, AlternativeName):
+            return not self == other
+        else:
+            return NotImplemented
