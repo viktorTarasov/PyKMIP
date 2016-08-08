@@ -54,9 +54,9 @@ class KmipSession(threading.Thread):
             'kmip.server.session.{0}'.format(self.name)
         )
 
-        self._logger.setLevel(logging.DEBUG)
         if logstream is not None:
             self._logger.addHandler(logstream)
+            self._logger.setLevel(logstream.level)
 
         self._engine = engine
         self._connection = connection
@@ -72,10 +72,12 @@ class KmipSession(threading.Thread):
         This method manages the new client connection, running a message
         handling loop. Once this method completes, the thread is finished.
         """
-        self._logger.info("Starting session: {0}".format(self.name))
+        self._logger.info("KMIPSession.run() Starting session: {0}".format(
+            self.name))
 
         while True:
             try:
+                self._logger.info("KMIPSession.run() handle message loop")
                 self._handle_message_loop()
             except exceptions.ConnectionClosed as e:
                 break
@@ -107,6 +109,7 @@ class KmipSession(threading.Thread):
             )
         else:
             try:
+                self._logger.debug("Engine process request")
                 response, max_response_size = self._engine.process_request(
                     request
                 )
