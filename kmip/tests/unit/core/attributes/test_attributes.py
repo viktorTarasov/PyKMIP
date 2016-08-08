@@ -14,6 +14,9 @@
 # under the License.
 
 from testtools import TestCase
+import binascii
+
+from kmip.services.server.crypto.engine import CryptographyEngine
 
 from kmip.core.attributes import AlternativeName
 from kmip.core.attributes import ApplicationData
@@ -26,6 +29,7 @@ from kmip.core.attributes import Link
 from kmip.core.attributes import Name
 from kmip.core.attributes import OperationPolicyName
 from kmip.core.attributes import Tags
+from kmip.core.attributes import X509CertificateSubject
 
 from kmip.core.factories.attribute_values import AttributeValueFactory
 
@@ -872,10 +876,6 @@ class TestAlternativeName(TestCase):
         self.ant_uri = AlternativeName.AlternativeNameType(self.ant_uri_enum)
         self.ant_dns = AlternativeName.AlternativeNameType(self.ant_dns_enum)
 
-        # <Link>
-        #     <LinkType type="Enumeration" value="PrivateKeyLink"/>
-        #     <LinkedObjectIdentifier type="TextString" value="12"/>
-        # </Link>
         self.blob_an_uri = BytearrayStream((
             b'\x42\x00\xbf\x01\x00\x00\x00\x40'
             b'\x42\x00\xc0\x07\x00\x00\x00\x23'
@@ -996,3 +996,177 @@ class TestAlternativeName(TestCase):
         an_uri.read(self.blob_an_uri)
         an_uri_ref = AlternativeName.create(self.anv_uri, self.ant_uri)
         self.assertEqual(an_uri, an_uri_ref)
+
+
+class TestX509CertificateSubject(TestCase):
+    def setUp(self):
+        super(TestX509CertificateSubject, self).setUp()
+
+        crypto_engine = CryptographyEngine()
+
+        self.dn_blob = crypto_engine.X509_DN_blob_from_str(
+            'O=github, OU=kmip, CN=test.com')
+        self.an_blob = crypto_engine.X509_extension_blob(
+            'subjectAltName',
+            False,
+            'URI:https://github.com/OpenKMIP/PyKMIP/')
+        self.dn = X509CertificateSubject.SubjectDistinguishedName(
+            self.dn_blob)
+        self.an = X509CertificateSubject.SubjectAlternativeName(
+            self.an_blob)
+
+        self.other_dn_blob = crypto_engine.X509_DN_blob_from_str(
+            'O=github, OU=kmip, CN=other-test.com')
+        self.other_an_blob = crypto_engine.X509_extension_blob(
+            'subjectAltName',
+            False,
+            'DNS:www.github.com')
+        self.other_dn = X509CertificateSubject.SubjectDistinguishedName(
+            self.other_dn_blob)
+        self.other_an = X509CertificateSubject.SubjectAlternativeName(
+            self.other_an_blob)
+
+        self.x509_cert_subject_blob = BytearrayStream((
+            b'\x42\x00\xb7\x01\x00\x00\x00\x70\x42\x00\xb4\x08\x00\x00\x00\x31'
+            b'\x30\x2f\x31\x0f\x30\x0d\x06\x03\x55\x04\x0a\x0c\x06\x67\x69\x74'
+            b'\x68\x75\x62\x31\x0d\x30\x0b\x06\x03\x55\x04\x0b\x0c\x04\x6b\x6d'
+            b'\x69\x70\x31\x0d\x30\x0b\x06\x03\x55\x04\x03\x0c\x04\x74\x65\x73'
+            b'\x74\x00\x00\x00\x00\x00\x00\x00\x42\x00\xb3\x08\x00\x00\x00\x27'
+            b'\x30\x25\x86\x23\x68\x74\x74\x70\x73\x3a\x2f\x2f\x67\x69\x74\x68'
+            b'\x75\x62\x2e\x63\x6f\x6d\x2f\x4f\x70\x65\x6e\x4b\x4d\x49\x50\x2f'
+            b'\x50\x79\x4b\x4d\x49\x50\x2f\x00'
+        ))
+
+        self.x509_cert_subject_an_only_blob = BytearrayStream((
+            b'\x42\x00\xb7\x01\x00\x00\x00\x38\x42\x00\xb4\x08\x00\x00\x00\x00'
+            b'\x42\x00\xb3\x08\x00\x00\x00\x27\x30\x25\x86\x23\x68\x74\x74\x70'
+            b'\x73\x3a\x2f\x2f\x67\x69\x74\x68\x75\x62\x2e\x63\x6f\x6d\x2f\x4f'
+            b'\x70\x65\x6e\x4b\x4d\x49\x50\x2f\x50\x79\x4b\x4d\x49\x50\x2f\x00'
+        ))
+
+    def tearDown(self):
+        super(TestX509CertificateSubject, self).tearDown()
+
+    def test_invalid_members(self):
+        """
+        Test that exception is raised when unknown member's type is requested
+        """
+        args = (self.dn, 'invalid')
+        self.assertRaises(TypeError, X509CertificateSubject.__init__, *args)
+
+        args = ('invalid', self.an)
+        self.assertRaises(TypeError, X509CertificateSubject.__init__, *args)
+
+    def test_empty(self):
+        """
+        Test empty X509CertificateSubject
+        """
+        x509_cert_subject = X509CertificateSubject()
+
+        self.assertIsInstance(x509_cert_subject, X509CertificateSubject)
+        self.assertTrue(x509_cert_subject.distinguished_name is None)
+        self.assertTrue(x509_cert_subject.alternative_name is None)
+
+    def test_init(self):
+        """
+          Test the instantiation of X509CertificateSubject object using
+          different types of init arguments
+        """
+        first = X509CertificateSubject(self.dn, self.an)
+        second = X509CertificateSubject(self.dn_blob, self.an_blob)
+
+        self.assertEqual(first, second)
+
+    def test_create_witn_both_members(self):
+        """
+          Test the creation of X509CertificateSubject object using different
+          types of 'create' arguments
+        """
+        first = X509CertificateSubject.create(self.dn, self.an)
+        second = X509CertificateSubject.create(self.dn_blob, self.an_blob)
+
+        self.assertEqual(first, second)
+
+    def test_create_witn_one_member(self):
+        """
+          Test the creation of X509CertificateSubject object using different
+          types of 'create' arguments
+        """
+        dn_empty = X509CertificateSubject.create(None, self.an)
+        an_empty = X509CertificateSubject.create(self.dn, None)
+
+        self.assertTrue(dn_empty.distinguished_name is None)
+        self.assertTrue(dn_empty.alternative_name is not None)
+        self.assertTrue(an_empty.distinguished_name is not None)
+        self.assertTrue(an_empty.alternative_name is None)
+
+    def test_create_with_invalid_arguments(self):
+        """
+          Test the exception when creating X509CertificateSubject object using
+          the invalid 'create' arguments
+        """
+        args = (None, None)
+        self.assertRaises(TypeError, X509CertificateSubject.create, *args)
+
+        args = (b'', None)
+        self.assertRaises(TypeError, X509CertificateSubject.create, *args)
+
+        args = (X509CertificateSubject.SubjectDistinguishedName(b''), None)
+        self.assertRaises(TypeError, X509CertificateSubject.create, *args)
+
+    def test__eq(self):
+        attr = X509CertificateSubject.create(self.dn, self.an)
+        same = X509CertificateSubject.create(self.dn, self.an)
+        other = X509CertificateSubject.create(self.other_dn, self.other_an)
+
+        self.assertTrue(attr == same)
+        self.assertFalse(attr == other)
+
+    def test__ne(self):
+        attr = X509CertificateSubject.create(self.dn, self.an)
+        same = X509CertificateSubject.create(self.dn, self.an)
+        other = X509CertificateSubject.create(self.other_dn, self.other_an)
+
+        self.assertFalse(attr != same)
+        self.assertTrue(attr != other)
+
+    def test__str(self):
+        attr = X509CertificateSubject.create(self.dn, self.an)
+        repr_dn = "SubjectDistinguishedName(value={0})".format(
+            binascii.hexlify(self.dn_blob))
+        repr_an = "SubjectAlternativeName(value={0})".format(
+            binascii.hexlify(self.an_blob))
+
+        repr_attr = (
+            "X509CertificateSubject(DN={0}, "
+            "alternative_name={1})".format(repr_dn, repr_an))
+
+        self.assertEqual(repr_attr, repr(attr))
+
+    def test_write(self):
+        attr = X509CertificateSubject.create(self.dn, self.an)
+        ostream = BytearrayStream()
+
+        attr.write(ostream)
+        self.assertEqual(self.x509_cert_subject_blob, ostream)
+
+    def test_read(self):
+        attr = X509CertificateSubject()
+        attr_reference = X509CertificateSubject.create(self.dn, self.an)
+
+        attr.read(self.x509_cert_subject_blob)
+        self.assertEqual(attr, attr_reference)
+
+    def test_write_an_only(self):
+        attr = X509CertificateSubject.create(b'', self.an)
+        ostream = BytearrayStream()
+
+        attr.write(ostream)
+        self.assertEqual(self.x509_cert_subject_an_only_blob, ostream)
+
+    def test_read_an_only(self):
+        attr = X509CertificateSubject()
+        attr_reference = X509CertificateSubject.create(b'', self.an)
+
+        attr.read(self.x509_cert_subject_an_only_blob)
+        self.assertEqual(attr, attr_reference)

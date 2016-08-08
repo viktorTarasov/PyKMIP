@@ -14,6 +14,7 @@
 # under the License.
 
 import six
+import binascii
 
 from kmip.core import enums
 
@@ -393,6 +394,199 @@ class CertificateType(Enumeration):
         """
         super(CertificateType, self).__init__(
             enums.CertificateTypeEnum, value, Tags.CERTIFICATE_TYPE)
+
+
+# 3.11
+# TODO
+class X509CertificateSubject(Struct):
+
+    class SubjectDistinguishedName(ByteString):
+
+        def __init__(self, value=b''):
+            if isinstance(value, six.text_type):
+                value = bytes(value, 'utf8')
+            super(
+                X509CertificateSubject.SubjectDistinguishedName,
+                self).__init__(
+                    value,
+                    Tags.SUBJECT_DISTINGUISHED_NAME)
+
+        def __eq__(self, other):
+            if isinstance(other,
+                          X509CertificateSubject.SubjectDistinguishedName):
+                if self.value == other.value:
+                    return True
+                else:
+                    return False
+            else:
+                return NotImplemented
+
+        def __ne__(self, other):
+            if isinstance(other,
+                          X509CertificateSubject.SubjectDistinguishedName):
+                return not self == other
+            else:
+                return NotImplemented
+
+        def __repr__(self):
+            value_hex = binascii.hexlify(self.value)
+            return "{0}(value={1})".format(
+                    type(self).__name__, value_hex)
+
+        def __str__(self):
+            value_hex = binascii.hexlify(self.value)
+            return "{0}".format(value_hex)
+
+    class SubjectAlternativeName(ByteString):
+
+        def __init__(self, value=None):
+            if isinstance(value, six.text_type):
+                value = bytes(value, 'utf8')
+            super(
+                X509CertificateSubject.SubjectAlternativeName,
+                self).__init__(
+                    value,
+                    Tags.SUBJECT_ALTERNATIVE_NAME)
+
+        def __eq__(self, other):
+            if isinstance(other,
+                          X509CertificateSubject.SubjectAlternativeName):
+                if self.value == other.value:
+                    return True
+                else:
+                    return False
+            else:
+                return NotImplemented
+
+        def __ne__(self, other):
+            if isinstance(other,
+                          X509CertificateSubject.SubjectAlternativeName):
+                return not self == other
+            else:
+                return NotImplemented
+
+        def __repr__(self):
+            value_hex = binascii.hexlify(self.value)
+            return "{0}(value={1})".format(
+                    type(self).__name__, value_hex)
+
+        def __str__(self):
+            value_hex = binascii.hexlify(self.value)
+            return "{0}".format(value_hex)
+
+    def __init__(self, distinguished_name=None, alternative_name=None):
+        classSubjectDN = X509CertificateSubject.SubjectDistinguishedName
+        classAlternativeName = X509CertificateSubject.SubjectAlternativeName
+
+        super(X509CertificateSubject, self).__init__(
+            tag=Tags.X_509_CERTIFICATE_SUBJECT)
+
+        if isinstance(distinguished_name, bytes):
+            distinguished_name = classSubjectDN(distinguished_name)
+
+        if isinstance(alternative_name, bytes):
+            alternative_name = classAlternativeName(alternative_name)
+
+        self.distinguished_name = distinguished_name
+        self.alternative_name = alternative_name
+        self.validate()
+
+    def read(self, istream):
+        classSubjectDN = X509CertificateSubject.SubjectDistinguishedName
+        classAlternativeName = X509CertificateSubject.SubjectAlternativeName
+
+        super(X509CertificateSubject, self).read(istream)
+        tstream = BytearrayStream(istream.read(self.length))
+
+        # Read subject DN and alternative name
+        self.distinguished_name = classSubjectDN()
+        self.alternative_name = classAlternativeName()
+
+        self.distinguished_name.read(tstream)
+        self.alternative_name.read(tstream)
+
+        self.is_oversized(tstream)
+
+    def write(self, ostream):
+        tstream = BytearrayStream()
+
+        # Write the distinguished name and/or alternative name
+        if self.distinguished_name is None:
+            dn_empty = X509CertificateSubject.SubjectDistinguishedName(b'')
+            dn_empty.write(tstream)
+        else:
+            self.distinguished_name.write(tstream)
+
+        if self.alternative_name is not None:
+            self.alternative_name.write(tstream)
+
+        # Write the length and value of the template attribute
+        self.length = tstream.length()
+        super(X509CertificateSubject, self).write(ostream)
+        ostream.write(tstream.buffer)
+
+    def validate(self):
+        classSubjectDN = X509CertificateSubject.SubjectDistinguishedName
+        classSubjectAN = X509CertificateSubject.SubjectAlternativeName
+        name = X509CertificateSubject.__name__
+        msg = ErrorStrings.BAD_EXP_RECV
+
+        if self.distinguished_name is not None:
+            if not isinstance(self.distinguished_name, classSubjectDN):
+                raise TypeError(msg.format(
+                    name, 'distinguished name', type(classSubjectDN),
+                    type(self.distinguished_name)))
+
+        if self.alternative_name is not None:
+            if not isinstance(self.alternative_name, classSubjectAN):
+                raise TypeError(msg.format(
+                    name, 'alternative name', type(classSubjectAN),
+                    type(self.alternative_name)))
+
+    @classmethod
+    def create(cls, distinguished_name, alternative_name):
+        dn = distinguished_name
+        if isinstance(dn, X509CertificateSubject.SubjectDistinguishedName):
+            dn = dn.value
+
+        an = alternative_name
+        if isinstance(an, X509CertificateSubject.SubjectAlternativeName):
+            an = an.value
+
+        if dn is None or len(dn) == 0:
+            if an is None or len(an) == 0:
+                raise TypeError(
+                    "Either DistinguishedName or "
+                    "AlternativeName has not to be empty")
+
+        return cls(distinguished_name=distinguished_name,
+                   alternative_name=alternative_name)
+
+    def __repr__(self):
+        return "{0}(DN={1}, alternative_name={2})".format(
+                type(self).__name__,
+                repr(self.distinguished_name),
+                repr(self.alternative_name))
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __eq__(self, other):
+        if isinstance(other, X509CertificateSubject):
+            if self.distinguished_name != other.distinguished_name:
+                return False
+            elif self.alternative_name != other.alternative_name:
+                return False
+            else:
+                return True
+        else:
+            return NotImplemented
+
+    def __ne__(self, other):
+        if isinstance(other, X509CertificateSubject):
+            return not self == other
+        else:
+            return NotImplemented
 
 
 class DigestValue(ByteString):
