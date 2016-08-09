@@ -1076,6 +1076,38 @@ class AttributePolicy(object):
                 ),
                 contents.ProtocolVersion.create(1, 0)
             ),
+            'Alternative Name': AttributeRuleSet(
+                False,
+                ('client'),
+                True,
+                True,
+                True,
+                True,
+                (
+                    enums.Operation.CREATE,
+                    enums.Operation.CREATE_KEY_PAIR,
+                    enums.Operation.REGISTER,
+                    enums.Operation.DERIVE_KEY,
+                    enums.Operation.ACTIVATE,
+                    enums.Operation.REVOKE,
+                    enums.Operation.DESTROY,
+                    enums.Operation.CERTIFY,
+                    enums.Operation.RECERTIFY,
+                    enums.Operation.REKEY,
+                    enums.Operation.REKEY_KEY_PAIR
+                ),
+                (
+                    enums.ObjectType.CERTIFICATE,
+                    enums.ObjectType.SYMMETRIC_KEY,
+                    enums.ObjectType.PUBLIC_KEY,
+                    enums.ObjectType.PRIVATE_KEY,
+                    enums.ObjectType.SPLIT_KEY,
+                    enums.ObjectType.TEMPLATE,
+                    enums.ObjectType.SECRET_DATA,
+                    enums.ObjectType.OPAQUE_DATA
+                ),
+                contents.ProtocolVersion.create(1, 1)
+            ),
         }
 
     def is_attribute_supported(self, attribute):
