@@ -13,6 +13,8 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+import six
+
 from kmip.core import attributes
 from kmip.core import enums
 from kmip.core import primitives
@@ -102,6 +104,8 @@ class AttributeValueFactory(object):
             return primitives.DateTime(value, enums.Tags.LAST_CHANGE_DATE)
         elif name is enums.AttributeType.CUSTOM_ATTRIBUTE:
             return attributes.CustomAttribute(value)
+        elif name is enums.AttributeType.ALTERNATIVE_NAME:
+            return self._create_alternative_name(value)
         else:
             if isinstance(name, str) and name.startswith('x-'):
                 # Custom attribute indicated
@@ -223,3 +227,19 @@ class AttributeValueFactory(object):
             return attributes.Link.create(link_type, linked_object_id)
         else:
             return attributes.Link()
+
+    def _create_alternative_name(self, data):
+        if data is not None:
+            if isinstance(data, six.text_type):
+                data = str(data)
+                return attributes.AlternativeName.create(data)
+            elif isinstance(data, list) and len(data) > 1:
+                return attributes.AlternativeName(data[0], data[1])
+            else:
+                msg = utils.build_er_error(
+                    attributes.AlternativeName,
+                    'constructor argument type',
+                    list, type(data))
+                raise TypeError(msg)
+        else:
+            return attributes.AlternativeName()
