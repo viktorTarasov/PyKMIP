@@ -15,12 +15,16 @@
 
 import logging
 import os
+import six
+import re
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
 from cryptography.hazmat.primitives.ciphers import algorithms
+
+from OpenSSL import crypto
 
 from kmip.core import enums
 from kmip.core import exceptions
@@ -223,9 +227,31 @@ class CryptographyEngine(api.CryptographicEngine):
         return public_key, private_key
 
     def X509_get_public_key(self, value, encoding=serialization.Encoding.DER):
-            # from certificate get blob of public key
-            cert = x509.load_der_x509_certificate(value, default_backend())
-            pub_key_blob = cert.public_key().public_bytes(
-                encoding=encoding,
-                format=serialization.PublicFormat.SubjectPublicKeyInfo)
-            return pub_key_blob
+        # from certificate get blob of public key
+        cert = x509.load_der_x509_certificate(value, default_backend())
+        pub_key_blob = cert.public_key().public_bytes(
+            encoding=encoding,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo)
+        return pub_key_blob
+
+    def X509_extension_blob(self, type_name, critical, value):
+        if isinstance(type_name, six.string_types):
+            type_name = bytes(type_name, 'ascii')
+        elif not isinstance(type_name, bytes):
+            TypeError("Extention type name has to be 'str' or 'bytes'")
+
+        if isinstance(value, six.string_types):
+            value = bytes(value, 'ascii')
+        elif not isinstance(value, bytes):
+            TypeError("Extention value has to be 'str' or 'bytes'")
+
+        ext = crypto.X509Extension(type_name, critical, value)
+        return ext.get_data()
+
+    def X509_DN_blob_from_str(self, dn_str):
+        rdns = re.findall('(C|O|CN|OU|DC)=([ \w-]+),?', dn_str)
+        x509_name = crypto.X509Name(crypto.X509().get_subject())
+        for name, value in rdns:
+            setattr(x509_name, name, value)
+
+        return x509_name.der()
