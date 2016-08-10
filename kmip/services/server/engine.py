@@ -84,7 +84,7 @@ class KmipEngine(object):
 
     def __init__(self,
                  db_url='sqlite:////tmp/pykmip.database',
-                 logstream=None):
+                 logstream=None):       # TODO remove logstream argument
         """
         Create a KmipEngine.
         """
@@ -1171,7 +1171,6 @@ class KmipEngine(object):
 
         # Get replaced PublicKey object
         for link in replaced_private_key.links:
-            print("_process_rekey_key_pair() link {0}".format(link))
             if link.link_type.value == LinkType.PUBLIC_KEY_LINK:
                 replaced_public_key =                               \
                     self._data_session.query(objects.PublicKey) \
@@ -1321,24 +1320,59 @@ class KmipEngine(object):
 
         # Process attribute sets
         uid = None
-        certificate_request = None
-        certificate_request_type = None
+        request = None
+        request_type = None
         attributes = {}
 
         if payload.uid:
             uid = payload.uid
         if payload.certificate_request:
-            certificate_request = payload.certificate_request
+            request = payload.certificate_request
         if payload.certificate_request_type:
-            certificate_request_type = payload.certificate_request_type.value
+            request_type = payload.certificate_request_type.value
         if payload.template_attribute:
             attributes = self._process_template_attribute(
                 payload.template_attribute)
 
-        uuid = 'coucou'
-        response_payload = certify.CertifyResponsePayload(uuid)
-        self._id_placeholder = str(uuid)
+        if uid is not None:
+            cert_uid = self._process_certify_with_uid(uid, attributes)
+        else:
+            if request is None or request_type is None:
+                raise exceptions.IllegalOperation(
+                    'Missing CertificateRequest and CertificateRequestType '
+                    'or both. '
+                )
+            cert_uid = self._process_certify_with_pkcs10(
+                request, request_type, attributes)
+
+        response_payload = certify.CertifyResponsePayload(cert_uid)
+        self._id_placeholder = str(cert_uid)
         return response_payload
+
+    def _process_certify_with_uid(self, uid, attributes):
+        pubkey = self._data_session.query(objects.PublicKey).filter(
+            objects.PublicKey.unique_identifier == uid).one()
+
+        links = list(filter(
+            lambda x: x.link_type.value == LinkType.PRIVATE_KEY_LINK,
+            pubkey.links))
+        if len(links) != 1:
+            raise exceptions.KmipError(
+                'Expected one link to PrivateKey, '
+                'observed {0} links'.format(len(links))
+            )
+        prvkey_uid = links[0].linked_oid.value
+        prvkey = self._data_session.query(objects.PrivateKey).filter(
+            objects.PrivateKey.unique_identifier == prvkey_uid).one()
+        print("TO be continued: PrvKey {0}".format(prvkey))
+
+        cert_uid = 'cert-uid'
+        return cert_uid
+
+    def _process_certify_with_pkcs10(self, request, request_type, attributes):
+
+        cert_uid = 'cert-uid'
+        return cert_uid
 
     @_kmip_version_supported('1.0')
     def _process_get(self, payload):
