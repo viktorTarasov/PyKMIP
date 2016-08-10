@@ -27,6 +27,7 @@ from kmip.pie import factory
 from kmip.pie import objects as pobjects
 
 from kmip.services.kmip_client import KMIPProxy
+from kmip.services.server.crypto.engine import CryptographyEngine
 
 
 class ProxyKmipClient(api.KmipClient):
@@ -491,12 +492,17 @@ class ProxyKmipClient(api.KmipClient):
             message = result.result_message.value
             raise exceptions.KmipOperationFailure(status, reason, message)
 
-    def certify(self, uid, request_type, request, template_attribute):
+    def certify(self, uid, request_type, request,
+                subject_dn, subject_an):
         """
         Generate a Certificate object for a public key.
 
         Args:
             uid (string): uid of PublicKey object to be certified
+            request (bytes): blob of request
+            request_type (enum): type of request
+            subject_dn (str): X509 Subject Distinguished Name
+            subject_an (str): X509 Subject Alternative Name
 
         Returns:
             string: The uid of the newly created Certificate.
@@ -515,15 +521,36 @@ class ProxyKmipClient(api.KmipClient):
         if not self._is_open:
             raise exceptions.ClientConnectionNotOpen()
 
-        # Create the template containing the attributes
-        # template_attribuite = cobjects.TemplateAttribute()
+        template = None
+        if subject_dn is not None or subject_an is not None:
+            crypto = CryptographyEngine()
+            name_blobs = list()
+            attributes = list()
+
+            if subject_dn is not None:
+                subject_dn_blob = crypto.X509_DN_blob_from_str(subject_dn)
+            else:
+                subject_dn_blob = b''
+            name_blobs.append(subject_dn_blob)
+
+            if subject_an is not None:
+                subject_an_blob = crypto.X509_extension_blob(
+                    'subjectAltName', False, subject_an)
+                name_blobs.append(subject_an_blob)
+
+            x509_subject = self.attribute_factory.create_attribute(
+                enums.AttributeType.X_509_CERTIFICATE_SUBJECT,
+                name_blobs)
+            attributes.append(x509_subject)
+
+            template = cobjects.TemplateAttribute(attributes=attributes)
 
         # Create the asymmetric key pair and handle the results
         result = self.proxy.certify(
             uid=uid,
             request_type=request_type,
             request=request,
-            template_attribute=template_attribute)
+            template_attribute=template)
 
         status = result.result_status.value
         if status == enums.ResultStatus.SUCCESS:
