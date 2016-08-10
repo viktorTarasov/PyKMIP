@@ -46,7 +46,7 @@ class AttributeValueFactory(object):
         elif name is enums.AttributeType.X_509_CERTIFICATE_IDENTIFIER:
             raise NotImplementedError()
         elif name is enums.AttributeType.X_509_CERTIFICATE_SUBJECT:
-            raise NotImplementedError()
+            return self._create_x509_certificate_subject(value)
         elif name is enums.AttributeType.X_509_CERTIFICATE_ISSUER:
             raise NotImplementedError()
         elif name is enums.AttributeType.CERTIFICATE_IDENTIFIER:
@@ -227,6 +227,16 @@ class AttributeValueFactory(object):
             return attributes.Link.create(link_type, linked_object_id)
         else:
             return attributes.Link()
+
+    def _create_x509_certificate_subject(self, names):
+        if names is not None:
+            subject_dn = names[0]
+            alternative_name = names[1]
+
+            return attributes.X509CertificateSubject.create(
+                subject_dn, alternative_name)
+        else:
+            return attributes.X509CertificateSubject()
 
     def _create_alternative_name(self, data):
         if data is not None:

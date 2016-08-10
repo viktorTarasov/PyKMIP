@@ -132,10 +132,9 @@ class TestAttributeValueFactory(testtools.TestCase):
         """
         Test that an X509CertificateSubject attribute can be created.
         """
-        kwargs = {'name': enums.AttributeType.X_509_CERTIFICATE_SUBJECT,
-                  'value': None}
-        self.assertRaises(
-            NotImplementedError, self.factory.create_attribute_value, **kwargs)
+        x509_subject = self.factory.create_attribute_value(
+            enums.AttributeType.X_509_CERTIFICATE_SUBJECT, None)
+        self.assertIsInstance(x509_subject, attributes.X509CertificateSubject)
 
     def test_create_x509_certificate_issuer(self):
         """
