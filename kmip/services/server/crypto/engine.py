@@ -17,6 +17,7 @@ import logging
 import os
 import six
 import re
+import binascii
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
@@ -29,6 +30,92 @@ from OpenSSL import crypto
 from kmip.core import enums
 from kmip.core import exceptions
 from kmip.services.server.crypto import api
+
+from kmip.core.enums import AttributeType
+
+
+class ASN1(object):
+
+    class ASN1_Item(object):
+
+        def __init__(self, data, level):
+            tag = data[0]
+            size = data[1]
+            if size > 0x80:
+                num_size_bytes = size & 0x7F
+                size = 0
+                for ii in range(2, 2 + num_size_bytes):
+                    size = size * 0x100 + data[ii]
+                offset = 2 + num_size_bytes
+            else:
+                offset = 2
+
+            self.blob = data[:offset + size]
+            self.data = data[offset:offset + size]
+            self.offset = offset
+            self.tag = tag
+            self.size = size
+            self.items = list()
+            self.level = level
+
+        def parse(self):
+            if (self.tag & 0x20) != 0:
+                offset_next = 0
+                while offset_next < self.size:
+                    item = ASN1.ASN1_Item(self.data[offset_next:],
+                                          self.level + 1)
+                    item.parse()
+                    self.items.append(item)
+                    offset_next += item.offset + item.size
+
+        def __str__(self):
+            return self.__repr__()
+
+        def __repr__(self):
+            msg = "{0}ASN1_Item(tag=0x{1}, size={2}, data={3})".format(
+                '    '*self.level,
+                format(self.tag, 'x'),
+                self.size,
+                binascii.hexlify(self.data))
+
+            for item in self.items:
+                msg += "\n"
+                msg += item.__repr__()
+
+            return msg
+
+    def __init__(self, data=None):
+        if isinstance(data, bytes):
+            self.data = data
+        else:
+            raise TypeError("Expected byte array")
+
+        self.items = list()
+        self.parse()
+
+    def parse(self):
+        offset_next = 0
+        while offset_next < len(self.data):
+            item = ASN1.ASN1_Item(self.data[offset_next:], 0)
+            item.parse()
+            self.items.append(item)
+            offset_next = item.offset + item.size
+
+    def __str__(self):
+        items_str = ''
+        for item in self.items:
+            items_str += str(item)
+            items_str += ', '
+
+        if len(items_str):
+            items_str = items_str[:-2]
+
+        return "ASN1(data={0})\n{1}".format(
+            binascii.hexlify(self.data),
+            items_str)
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class CryptographyEngine(api.CryptographicEngine):
@@ -255,3 +342,76 @@ class CryptographyEngine(api.CryptographicEngine):
             setattr(x509_name, name, value)
 
         return x509_name.der()
+
+    RDN_names = {
+        b'55040a': 'O',
+        b'55040b': 'OU',
+        b'550403': 'CN'
+    }
+
+    GeneralNames = {
+        0: 'othername',
+        1: 'email',
+        2: 'DNS',
+        3: 'X400Name',
+        4: 'DirName',
+        5: 'EdiPartyName',
+        6: 'URI',
+        7: 'IP Address',
+        8: 'Registered ID',
+    }
+
+    def PKCS10_set_subject(self, req, asn1):
+        subject = req.get_subject()
+        for rdn in asn1.items[0].items:
+            for item in rdn.items[0].items:
+                if item.tag == 0x06:
+                    oid = binascii.hexlify(item.data)
+                if item.tag == 0x0C:
+                    value = item.data.decode("utf-8")
+
+            if oid in self.RDN_names:
+                setattr(subject, self.RDN_names[oid], value)
+            else:
+                raise TypeError("RDN OID not found in the dictionary")
+
+    def PKCS10_set_subjectAltName(self, req, asn1):
+        alt_names = list()
+        for item in asn1.items[0].items:
+            tag = item.tag & 0x1F
+            if tag in self.GeneralNames:
+                alt_name = "{0}:{1}".format(
+                    self.GeneralNames[tag],
+                    item.data.decode("utf-8"))
+                alt_names.append(alt_name)
+            else:
+                raise TypeError("Invalid General Name tag: {0}".format(tag))
+
+        if len(alt_names):
+            ext_value = ",".join(alt_names)
+            ext_value = ext_value.encode("utf-8")
+            req.add_extensions([
+                crypto.X509Extension(b'subjectAltName', False, ext_value)])
+
+    def PKCS10_create(self, private_key, attributes):
+        prvkey = crypto.load_privatekey(crypto.FILETYPE_ASN1, private_key)
+        req = crypto.X509Req()
+        req.set_pubkey(prvkey)
+
+        for attribute_name in attributes.keys():
+            if attribute_name == AttributeType.X_509_CERTIFICATE_SUBJECT.value:
+                subject = attributes[attribute_name]
+
+                if len(subject.distinguished_name.value):
+                    self.PKCS10_set_subject(
+                        req,
+                        ASN1(subject.distinguished_name.value))
+
+                if subject.alternative_name is not None:
+                    if len(subject.alternative_name.value):
+                        self.PKCS10_set_subjectAltName(
+                            req,
+                            ASN1(subject.alternative_name.value))
+
+        req.sign(prvkey, 'sha256')
+        return crypto.dump_certificate_request(crypto.FILETYPE_ASN1, req)

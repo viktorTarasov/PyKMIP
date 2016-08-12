@@ -55,6 +55,7 @@ from kmip.pie import sqltypes
 
 from kmip.services.server import policy
 from kmip.services.server.crypto import engine
+from kmip.services.server.pki import engine as pki_engine
 
 
 class KmipEngine(object):
@@ -1364,13 +1365,18 @@ class KmipEngine(object):
         prvkey_uid = links[0].linked_oid.value
         prvkey = self._data_session.query(objects.PrivateKey).filter(
             objects.PrivateKey.unique_identifier == prvkey_uid).one()
-        print("TO be continued: PrvKey {0}".format(prvkey))
+
+        req_blob = self._cryptography_engine.PKCS10_create(
+            prvkey.value, attributes)
+
+        pki = pki_engine.PKIEngine()
+        pki.connect()
+        pki.sign_certificate_request(req_blob)
 
         cert_uid = 'cert-uid'
         return cert_uid
 
     def _process_certify_with_pkcs10(self, request, request_type, attributes):
-
         cert_uid = 'cert-uid'
         return cert_uid
 
