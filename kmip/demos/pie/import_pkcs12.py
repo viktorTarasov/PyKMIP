@@ -192,6 +192,10 @@ if __name__ == '__main__':
                     LinkType.CERTIFICATE_LINK,
                     certificate_uid
                 ]]
+            not_fresh = [
+                AttributeType.FRESH,
+                False
+            ]
 
             uid, attribute = client.add_attribute(
                 private_key_uid,
@@ -217,6 +221,18 @@ if __name__ == '__main__':
             logger.info("Successfully added {0} to object {1}".format(
                 attribute, uid))
 
+            uid, attribute = client.add_attribute(private_key_uid, *not_fresh)
+            logger.info("Successfully added {0} to object {1}".format(
+                attribute, uid))
+
+            uid, attribute = client.add_attribute(public_key_uid, *not_fresh)
+            logger.info("Successfully added {0} to object {1}".format(
+                attribute, uid))
+
+            uid, attribute = client.add_attribute(certificate_uid, *not_fresh)
+            logger.info("Successfully added {0} to object {1}".format(
+                attribute, uid))
+
             if contact_information is not None:
                 ci_attr = [
                     AttributeType.CONTACT_INFORMATION,
@@ -234,6 +250,10 @@ if __name__ == '__main__':
                 setattr(ca_cert, "uid", uid)
                 logger.info("Successfully registered certificate with "
                             "ID:{0}".format(uid))
+                uid, attribute = client.add_attribute(uid, *not_fresh)
+                logger.info("Successfully added {0} to object {1}".format(
+                    attribute, uid))
+
 
             for xx in ca_certs:
                 x_subject = xx.subjectKeyIdentifier
