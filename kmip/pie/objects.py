@@ -14,7 +14,7 @@
 # under the License.
 
 from abc import abstractmethod
-from sqlalchemy import Column, event, ForeignKey, Integer, String, VARBINARY
+from sqlalchemy import Column, event, ForeignKey, Integer, Boolean, String, VARBINARY
 from sqlalchemy.ext.associationproxy import association_proxy
 from sqlalchemy.orm import relationship
 
@@ -173,6 +173,7 @@ class CryptographicObject(ManagedObject):
                                primary_key=True)
     cryptographic_usage_masks = Column('cryptographic_usage_mask',
                                        sql.UsageMaskType)
+    fresh = Column('fresh', Boolean)
 
     _links = relationship('CryptographicObjectLink', back_populates='co',
                           cascade='all, delete-orphan')
@@ -194,6 +195,7 @@ class CryptographicObject(ManagedObject):
 
         self.cryptographic_usage_masks = list()
         self.links = list()
+        self.fresh = True
 
         # All remaining attributes are not considered part of the public API
         # and are subject to change.
@@ -206,7 +208,6 @@ class CryptographicObject(ManagedObject):
         self._compromise_occurrence_date = None
         self._deactivation_date = None
         self._destroy_date = None
-        self._fresh = None
         self._lease_time = None
         self._revocation_reason = None
         self._state = None
