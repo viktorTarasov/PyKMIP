@@ -533,6 +533,11 @@ class QueryFunction(enum.Enum):
     QUERY_EXTENSION_LIST         = 0x00000005
     QUERY_EXTENSION_MAP          = 0x00000006
 
+# 9.1.3.2.26
+class PutFunction(enum.Enum):
+    NEW     = 0x00000001
+    REPLACE = 0x00000002
+
 # 9.1.3.2.27
 class Operation(enum.Enum):
     CREATE               = 0x00000001
