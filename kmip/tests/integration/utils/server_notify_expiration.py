@@ -18,10 +18,12 @@ import optparse
 import os
 import sys
 import datetime
+import binascii
 from six.moves.configparser import SafeConfigParser
 
 from cryptography import x509
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
 
 from sqlalchemy import desc
 
@@ -94,32 +96,56 @@ def build_cli_parser(conf, section):
     return parser
 
 
-def notify_expires(contact_information,
+def notify_expiration(contact_information,
+                   certificate_oid,
+                   certificate_fingerprint,
+                   private_key_oid,
+                   public_key_oid,
                    delta,
-                   logger=None,
-                   certificate_oid=None,
-                   private_key_oid=None,
-                   public_key_oid=None):
+                   logger=None):
     if logger is None:
         logger = utils.build_console_logger(logging.DEBUG)
 
-    last_change_date = {
+    attributes = list()
+    attributes.append({
         'attribute_type': EnumAttributeType.LAST_CHANGE_DATE,
         'attribute_value': int(datetime.datetime.now().timestamp())
-    }
-    custom_expires_in = {
+    })
+    attributes.append({
         'attribute_type': "x-expires-in",
-        'attribute_value': str(delta)
-    }
-    attributes = (last_change_date, custom_expires_in)
-    oids = [certificate_oid, private_key_oid, public_key_oid]
+        'attribute_value': delta
+    })
+    attributes.append({
+        'attribute_type': "x-certificate-fingerprint-sha256",
+        'attribute_value': certificate_fingerprint,
+    })
+    attributes.append({
+        'attribute_type': "x-private-key-uid",
+        'attribute_value': private_key_oid,
+    })
+    attributes.append({
+        'attribute_type': "x-public-key-uid",
+        'attribute_value': public_key_oid,
+    })
 
-    with ProxyKmipClient() as client:
+    hostname = None
+    hostport = None
+    if contact_information is not None:
+        host_port = contact_information.split(':', 1)
+        print("Using server from ContactInformation: {0}".format(host_port))
+        hostname = host_port[0]
+        if len(host_port) > 1:
+            hostport = host_port[1]
+
+    with ProxyKmipClient(
+            hostname=hostname,
+            port = hostport,
+            config=opts.conf_section) as client:
         try:
-            client.notify("expiration",
-                          contact_information,
-                          oids,
-                          attributes)
+            client.notify_expiration(
+                contact_information,
+                certificate_oid,
+                attributes)
         except Exception as e:
             logger.error(e)
 
@@ -140,9 +166,9 @@ if __name__ == '__main__':
     )
     logstream.setFormatter(formatter)
 
-    # engine = KmipEngine(db_url='sqlite:///:memory:', logstream=logstream)
-    engine = KmipEngine(db_url='sqlite:////tmp/kmip-sql.db',
-                        logstream=logstream)
+    engine = KmipEngine(
+        db_url='sqlite:////tmp/kmip-sql.db',
+        logstream=logstream)
 
     session = engine._data_store_session_factory()
 
@@ -154,6 +180,10 @@ if __name__ == '__main__':
         certificate_oid = str(cert_obj.unique_identifier)
         cert = x509.load_der_x509_certificate(cert_obj.value,
                                               default_backend())
+        cert_fingerprint = binascii.hexlify(
+            cert.fingerprint(hashes.SHA256())
+        ).decode('utf-8').upper()
+        print("Cert fingerprint '{0}'".format(cert_fingerprint))
         delta = cert.not_valid_after - datetime.datetime.now()
 
         log_string = "Cert {0}; ".format(cert_obj.unique_identifier)
@@ -161,7 +191,7 @@ if __name__ == '__main__':
             log_string += "expires in {0} days".format(delta.days)
         else:
             log_string += "expired"
-        engine._logger.warning(log_string)
+        # engine._logger.warning(log_string)
 
         linked_pubkey_oid = None
         linked_prvkey_oid = None
@@ -180,8 +210,13 @@ if __name__ == '__main__':
             continue
         contact_information = cert_obj.contact_information.value
 
-        notify_expires(contact_information,
-                       delta.days,
-                       certificate_oid=certificate_oid,
-                       private_key_oid=linked_prvkey_oid,
-                       public_key_oid=linked_pubkey_oid)
+        print("Notify expiration of cert-{0}, contact information '{1}'".format(
+            cert_obj.unique_identifier, contact_information))
+        notify_expiration(
+            contact_information,
+            str(cert_obj.unique_identifier),
+            cert_fingerprint,
+            str(linked_prvkey_oid),
+            str(linked_pubkey_oid),
+            str(delta.days))
+        break
