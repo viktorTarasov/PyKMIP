@@ -32,6 +32,7 @@ from kmip.services.results import LocateResult
 from kmip.services.results import NotifyResult
 from kmip.services.results import OperationResult
 from kmip.services.results import QueryResult
+from kmip.services.results import PutResult
 from kmip.services.results import RegisterResult
 from kmip.services.results import RekeyKeyPairResult
 from kmip.services.results import RevokeResult
@@ -66,6 +67,7 @@ from kmip.core.messages.payloads import get
 from kmip.core.messages.payloads import get_attribute_list
 from kmip.core.messages.payloads import locate
 from kmip.core.messages.payloads import notify
+from kmip.core.messages.payloads import put
 from kmip.core.messages.payloads import query
 from kmip.core.messages.payloads import rekey_key_pair
 from kmip.core.messages.payloads import register
@@ -201,7 +203,6 @@ class KMIPProxy(KMIP):
                 self.is_authentication_suite_supported(authentication_suite))
 
     def open(self):
-
         self.logger.debug("KMIPProxy keyfile: {0}".format(self.keyfile))
         self.logger.debug("KMIPProxy certfile: {0}".format(self.certfile))
         self.logger.debug(
@@ -222,6 +223,8 @@ class KMIPProxy(KMIP):
             self._create_socket(sock)
             self.protocol = KMIPProtocol(self.socket)
             try:
+                print("Kmip-Client KMIPProxy.open() connect({0}:{1})".format(
+                    self.host, self.port))
                 self.socket.connect((self.host, self.port))
             except Exception as e:
                 self.logger.error("An error occurred while connecting to "
@@ -416,14 +419,30 @@ class KMIPProxy(KMIP):
         results = self._process_batch_items(response)
         return results[0]
 
-    def notify(self, uids, attributes):
+    def notify(self, contact_information, uid, attributes):
         batch_items = list()
         batch_uids = dict()
-        for uid in uids:
-            batch_uids[uid] = UniqueBatchItemID(os.urandom(8))
-            batch_item = self._build_notify_batch_item(uid,
-                                                       batch_uids[uid],
-                                                       attributes)
+        batch_uids[uid] = UniqueBatchItemID(os.urandom(8))
+        batch_item = self._build_notify_batch_item(uid,
+                                                   batch_uids[uid],
+                                                   attributes)
+        batch_items.append(batch_item)
+
+        request = self._build_request_message(None, batch_items)
+        response = self._send_and_receive_message(request)
+        results = self._process_batch_items(response)
+        return results
+
+    def put(self, contact_information, objs):
+        batch_items = list()
+        for obj in objs:
+            batch_item = self._build_put_batch_item(
+                batch_id=UniqueBatchItemID(os.urandom(8)),
+                uid=obj['uid'],
+                put_function=obj['put function'],
+                replaced_uid=obj['replaced uid'],
+                data=obj['data'],
+                attributes = obj['attributes'])
             batch_items.append(batch_item)
 
         request = self._build_request_message(None, batch_items)
@@ -554,6 +573,22 @@ class KMIPProxy(KMIP):
             request_payload=payload)
         return batch_item
 
+    def _build_put_batch_item(self, batch_id=None, uid=None,
+            put_function=None, replaced_uid=None, data=None, attributes=None):
+        operation = Operation(OperationEnum.PUT)
+        payload = put.PutRequestPayload(
+            uid=uid,
+            put_function=put_function,
+            replaced_uid=replaced_uid,
+            object_data=data,
+            attributes=attributes)
+        print("Payload {0}".format(payload))
+        batch_item = messages.RequestBatchItem(
+            unique_batch_item_id=batch_id,
+            operation=operation,
+            request_payload=payload)
+        return batch_item
+
     def _process_batch_items(self, response):
         results = []
         for batch_item in response.batch_items:
@@ -584,6 +619,8 @@ class KMIPProxy(KMIP):
             return self._process_notify_batch_item
         elif operation == OperationEnum.CERTIFY:
             return self._process_certify_batch_item
+        elif operation == OperationEnum.PUT:
+            return self._process_put_batch_item
         else:
             raise ValueError("no processor for operation: {0}".format(
                 operation))
@@ -722,6 +759,12 @@ class KMIPProxy(KMIP):
 
     def _process_notify_batch_item(self, batch_item):
         result = NotifyResult(
+            batch_item.result_status, batch_item.result_reason,
+            batch_item.result_message)
+        return result
+
+    def _process_put_batch_item(self, batch_item):
+        result = PutResult(
             batch_item.result_status, batch_item.result_reason,
             batch_item.result_message)
         return result
