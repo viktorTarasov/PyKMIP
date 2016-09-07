@@ -372,3 +372,13 @@ class NotifyResult(OperationResult):
                  result_message=None):
         super(NotifyResult, self).__init__(
             result_status, result_reason, result_message)
+
+
+class PutResult(OperationResult):
+
+    def __init__(self,
+                 result_status,
+                 result_reason=None,
+                 result_message=None):
+        super(PutResult, self).__init__(
+            result_status, result_reason, result_message)
