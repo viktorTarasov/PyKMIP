@@ -17,8 +17,10 @@ import logging
 import six
 
 from kmip.core import enums
+from kmip.core.enums import NameType, AttributeType
 from kmip.core import objects as cobjects
 from kmip.core.attributes import PrivateKeyUniqueIdentifier
+from kmip.core.attributes import Name
 from kmip.core.factories import attributes
 
 from kmip.pie import api
@@ -414,23 +416,19 @@ class ProxyKmipClient(api.KmipClient):
             message = result.result_message.value
             raise exceptions.KmipOperationFailure(status, reason, message)
 
-    def notify(self, subject, contact_information, uids, attributes):
+    def notify_expiration(self, contact_information, uid, attributes):
         """
-        Notify changed attributes of managed object to client
+        Notify expiration of private key managed object to client
 
         Args:
-            attributes (list): attributes that have been changed
             uid (string): The unique ID of the managed object with which the
                 retrieved attribute names should be associated. Optional,
                 defaults to None.
+            attributes (list): attributes that have been changed
         """
         # Check input
-        if uids is not None:
-            if not isinstance(uids, list):
-                raise TypeError("uids must be a list of strings")
-        for uid in uids:
-            if not isinstance(uid, six.string_types):
-                raise TypeError("uid must be a string")
+        if not isinstance(uid, six.string_types):
+            raise TypeError("uid must be a string")
 
         # Verify that operations can be given at this time
         if not self._is_open:
@@ -443,9 +441,27 @@ class ProxyKmipClient(api.KmipClient):
             attrs.append(attr)
 
         # Get the list of attribute names for a managed object.
-        notify_results = self.proxy.notify(uids, attrs)
+        notify_results = self.proxy.notify(contact_information, uid, attrs)
 
         for result in notify_results:
+            status = result.result_status.value
+            if status != enums.ResultStatus.SUCCESS:
+                reason = result.result_reason.value
+                message = result.result_message.value
+                raise exceptions.KmipOperationFailure(status, reason, message)
+
+    def put(self, contact_information, objs):
+        """
+        Send managed object to client
+
+        Args:
+        """
+        # Check input
+
+        # Get the list of attribute names for a managed object.
+        put_results = self.proxy.put(contact_information, objs)
+
+        for result in put_results:
             status = result.result_status.value
             if status != enums.ResultStatus.SUCCESS:
                 reason = result.result_reason.value
@@ -493,7 +509,8 @@ class ProxyKmipClient(api.KmipClient):
             raise exceptions.KmipOperationFailure(status, reason, message)
 
     def certify(self, uid, request_type, request,
-                subject_dn, subject_an):
+                subject_dn, subject_an, object_name,
+                contact_information):
         """
         Generate a Certificate object for a public key.
 
@@ -503,6 +520,8 @@ class ProxyKmipClient(api.KmipClient):
             request_type (enum): type of request
             subject_dn (str): X509 Subject Distinguished Name
             subject_an (str): X509 Subject Alternative Name
+            object_name (str): KMIP object name
+            contact_information (str): information used to notify client
 
         Returns:
             string: The uid of the newly created Certificate.
@@ -522,28 +541,44 @@ class ProxyKmipClient(api.KmipClient):
             raise exceptions.ClientConnectionNotOpen()
 
         template = None
-        if subject_dn is not None or subject_an is not None:
-            crypto = CryptographyEngine()
-            name_blobs = list()
-            attributes = list()
+        if subject_dn is None and subject_an is  None:
+                raise ValueError(
+                    "Has to be supplied 'Subject DN'"
+                    "or 'Subject Alternative Name'")
 
-            if subject_dn is not None:
-                subject_dn_blob = crypto.X509_DN_blob_from_str(subject_dn)
-            else:
-                subject_dn_blob = b''
-            name_blobs.append(subject_dn_blob)
+        crypto = CryptographyEngine()
+        name_blobs = list()
+        attributes = list()
 
-            if subject_an is not None:
-                subject_an_blob = crypto.X509_extension_blob(
-                    'subjectAltName', False, subject_an)
-                name_blobs.append(subject_an_blob)
+        if subject_dn is not None:
+            subject_dn_blob = crypto.X509_DN_blob_from_str(subject_dn)
+        else:
+            subject_dn_blob = b''
+        name_blobs.append(subject_dn_blob)
 
-            x509_subject = self.attribute_factory.create_attribute(
-                enums.AttributeType.X_509_CERTIFICATE_SUBJECT,
-                name_blobs)
-            attributes.append(x509_subject)
+        if subject_an is not None:
+            subject_an_blob = crypto.X509_extension_blob(
+                'subjectAltName', False, subject_an)
+            name_blobs.append(subject_an_blob)
 
-            template = cobjects.TemplateAttribute(attributes=attributes)
+        x509_subject = self.attribute_factory.create_attribute(
+            enums.AttributeType.X_509_CERTIFICATE_SUBJECT,
+            name_blobs)
+        attributes.append(x509_subject)
+
+        if object_name is not None:
+            attr = self.attribute_factory.create_attribute(
+                AttributeType.NAME,
+                Name.create(object_name, NameType.UNINTERPRETED_TEXT_STRING))
+            attributes.append(attr)
+
+        if contact_information is not None:
+            attr = self.attribute_factory.create_attribute(
+                AttributeType.CONTACT_INFORMATION,
+                contact_information)
+            attributes.append(attr)
+
+        template = cobjects.TemplateAttribute(attributes=attributes)
 
         # Create the asymmetric key pair and handle the results
         result = self.proxy.certify(
