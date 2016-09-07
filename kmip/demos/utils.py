@@ -331,7 +331,7 @@ def build_cli_parser(operation=None):
             type="str",
             default=None,
             dest="uuid",
-            help="UID of key object to re-key")
+            help="UID of public key object to certify")
         parser.add_option(
             "",
             "--pkcs10-file",
@@ -364,6 +364,14 @@ def build_cli_parser(operation=None):
             default=None,
             dest="subject_distinguished_name",
             help="X509v3 Certificate Subject DN")
+        parser.add_option(
+            "",
+            "--name",
+            action="store",
+            type="str",
+            default=None,
+            dest="object_name",
+            help="KMIP object name")
     return parser
 
 
