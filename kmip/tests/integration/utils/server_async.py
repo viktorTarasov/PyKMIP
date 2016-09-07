@@ -28,7 +28,8 @@ FILE_PATH = os.path.dirname(os.path.abspath(__file__))
 
 
 def run_server(host, port, certfile, keyfile, cert_reqs, ssl_version,
-               ca_certs, do_handshake_on_connect, suppress_ragged_eofs):
+               ca_certs, do_handshake_on_connect, suppress_ragged_eofs, 
+               server_role):
     logger = logging.getLogger(__name__)
 
     server = KMIPThreadingServer(
@@ -40,13 +41,13 @@ def run_server(host, port, certfile, keyfile, cert_reqs, ssl_version,
         ssl_version=ssl_version,
         ca_certs=ca_certs,
         do_handshake_on_connect=do_handshake_on_connect,
-        suppress_ragged_eofs=suppress_ragged_eofs)
+        suppress_ragged_eofs=suppress_ragged_eofs,
+        server_role=server_role)
 
     logger.info('Starting the KMIP Threading server')
-    logger.info('host ' + (host if host is not None else 'None'))
-    logger.info('port {0}'.format((port if port is not None else 'None')))
-    logger.info('keyfile ' + (keyfile if keyfile is not None else 'None'))
-    logger.info('certfile ' + (certfile if certfile is not None else 'None'))
+    logger.info("host={0}, port={1}".format(host, port))
+    logger.info("keyfile={0}, certfile={1}".format(keyfile, certfile))
+    logger.info("server-role={0}".format(server_role))
 
     try:
         server.serve()
@@ -75,8 +76,10 @@ def build_cli_parser(conf, section):
             'ssl_version': 'PROTOCOL_SSLv23',
             'ca_certs': ConfigHelper.NONE_VALUE,
             'do_handshake_on_connect': "True",
-            'suppress_ragged_eofs': "True"
+            'suppress_ragged_eofs': "True",
+            'server_role': "main"
     }
+
     if (section and isinstance(conf, SafeConfigParser)):
         for key in defaults:
             if conf.has_option(section, key):
@@ -109,6 +112,9 @@ def build_cli_parser(conf, section):
                       default=None, dest="conf_file")
     parser.add_option("", "--config-section", action="store",
                       default=None, dest="conf_section")
+    parser.add_option("", "--server-role", action="store",
+                      default=defaults['server_role'],
+                      dest="server_role")
 
     return parser
 
@@ -130,4 +136,5 @@ if __name__ == '__main__':
                ssl_version=opts.ssl_version,
                ca_certs=opts.ca_certs,
                do_handshake_on_connect=opts.do_handshake_on_connect,
-               suppress_ragged_eofs=opts.suppress_ragged_eofs)
+               suppress_ragged_eofs=opts.suppress_ragged_eofs,
+               server_role=opts.server_role)

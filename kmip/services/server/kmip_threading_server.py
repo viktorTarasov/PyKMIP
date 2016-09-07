@@ -23,9 +23,11 @@ from kmip.services.server.engine import KmipEngine
 from kmip.services.server.session import KmipSession
 
 
-class KMIPServerRequestHandler(socketserver.BaseRequestHandler):
+class KMIPServerRequestHandlerApache(socketserver.BaseRequestHandler):
 
     def handle(self):
+        # db_url = 'sqlite:///:memory:'
+        db_url = 'sqlite:////tmp/kmip-sql-apache.db'
         logstream = logging.StreamHandler()
         logstream.setLevel(logging.DEBUG)
         formatter = logging.Formatter(
@@ -34,9 +36,27 @@ class KMIPServerRequestHandler(socketserver.BaseRequestHandler):
         logstream.setFormatter(formatter)
 
         title = threading.current_thread().name
-        # engine = KmipEngine(db_url='sqlite:///:memory:', logstream=logstream)
-        engine = KmipEngine(db_url='sqlite:////tmp/kmip-sql.db',
-                            logstream=logstream)
+        engine = KmipEngine(db_url=db_url, logstream=logstream)
+        session = KmipSession(engine,
+                              self.request,
+                              name="{} {}".format(title, self.client_address),
+                              logstream=logstream)
+        session.run()
+
+
+class KMIPServerRequestHandler(socketserver.BaseRequestHandler):
+
+    def handle(self):
+        db_url = 'sqlite:////tmp/kmip-sql.db'
+        logstream = logging.StreamHandler()
+        logstream.setLevel(logging.DEBUG)
+        formatter = logging.Formatter(
+            '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        )
+        logstream.setFormatter(formatter)
+
+        title = threading.current_thread().name
+        engine = KmipEngine(db_url=db_url, logstream=logstream)
         session = KmipSession(engine,
                               self.request,
                               name="{} {}".format(title, self.client_address),
@@ -76,17 +96,23 @@ class KMIPThreadingServer(object):
 
     def __init__(self, host=None, port=None, keyfile=None, certfile=None,
                  cert_reqs=None, ssl_version=None, ca_certs=None,
-                 do_handshake_on_connect=None, suppress_ragged_eofs=None):
+                 do_handshake_on_connect=None, suppress_ragged_eofs=None,
+                 server_role=None):
         self.logger = logging.getLogger(__name__)
 
-        print("KMIPServerAsync() open")
         self._set_variables(host, port, keyfile, certfile, cert_reqs,
                             ssl_version, ca_certs, do_handshake_on_connect,
                             suppress_ragged_eofs)
 
+        if server_role == 'apache':
+            requestHandler = KMIPServerRequestHandlerApache
+        else:
+            requestHandler = KMIPServerRequestHandler
+
+        print("KMIPServerAsync(server-role={0}) (host={1}:{2}) ".format(server_role, self.host, self.port))
         self.server = KMIPThreadingServer.ThreadingTCPServer(
             (self.host, self.port),
-            KMIPServerRequestHandler,
+            requestHandler,
             self.certfile,
             self.keyfile)
 
