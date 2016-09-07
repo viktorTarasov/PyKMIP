@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    WSDL description for the OpenTrust PKI EE SOAP Connector, Version 2.2
+    
+    This code was developped by OpenTrust (http://www.opentrust.com/).
+
+    Copyright(C) 2000-2009 OpenTrust
+
+    Please refer to your contract/license or contact license@opentrust.com
+    for any question related to the license of this software.
+    
+    
+    $Id: otpkieeconnector-2.2.wsdl 104284 2009-11-25 13:26:28Z fgarzon $
+    $HeadURL: svn+ssh://fgarzon@svn.int.opentrust.com/opt/svn/Offre/idxpki/tags/pki-4.7.0/sources/tools/SOAPConnector/otpkieeconnector-2.2.wsdl $
+-->
+
+<wsdl:definitions targetNamespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"
+    xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+    xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:otmsg="http://www.opentrust.com/OpenTrust/XML/Message/1.2"
+    xmlns:pkieeconn="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2">
+    <wsdl:documentation>
+      WSDL definition of the OpenTrust PKI EE Connector version 2.2
+    </wsdl:documentation>
+    <wsdl:types>
+        <wsdl:documentation>Types used by the OpenTrust PKI SOAP EE Connector</wsdl:documentation>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"
+            targetNamespace="http://www.opentrust.com/OpenTrust/XML/Message/1.2"
+            xmlns:otmsg="http://www.opentrust.com/OpenTrust/XML/Message/1.2">
+            <xs:annotation>
+                <xs:documentation>External definition of the OpenTrust Message schema (version 1.2)</xs:documentation>
+            </xs:annotation>
+            <xs:include schemaLocation="otmessage-1.2.xsd"/>
+        </xs:schema>
+
+    </wsdl:types>
+    <wsdl:message name="OTMessageIn">
+        <wsdl:documentation>Input message used for every OpenTrust PKI EE Connector operation : contains one
+            argument : an OpenTrust Message </wsdl:documentation>
+        <wsdl:part name="InputParameter" type="otmsg:OTMessageType"/>
+    </wsdl:message>
+    <wsdl:message name="OTMessageOut">
+        <wsdl:documentation>Output message used for every OpenTrust PKI EE Connector operation : contains one
+            argument : an  OpenTrust Message</wsdl:documentation>
+        <wsdl:part name="OutputParameter" type="otmsg:OTMessageType"/>
+    </wsdl:message>
+    <wsdl:portType name="OTPKIEEConnectorSOAPPortType">
+        <wsdl:operation name="version">
+            <wsdl:documentation> Returns Version information about the PKI software and the EE  connector</wsdl:documentation>
+            <wsdl:input message="pkieeconn:OTMessageIn"/>
+            <wsdl:output message="pkieeconn:OTMessageOut"/>
+        </wsdl:operation>
+      <wsdl:operation name="enrollment_request">
+        <wsdl:documentation> Submits An Enrollment Request </wsdl:documentation>
+        <wsdl:input message="pkieeconn:OTMessageIn"/>
+        <wsdl:output message="pkieeconn:OTMessageOut"/>
+      </wsdl:operation>
+      <wsdl:operation name="profile_properties">
+            <wsdl:documentation>Retrieve the properties of a given profile</wsdl:documentation>
+            <wsdl:input message="pkieeconn:OTMessageIn"/>
+            <wsdl:output message="pkieeconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="revocation_request">
+            <wsdl:documentation> Submits A Revocation Request </wsdl:documentation>
+            <wsdl:input message="pkieeconn:OTMessageIn"/>
+            <wsdl:output message="pkieeconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="recovery_request">
+            <wsdl:documentation> Submits A Recovery Request </wsdl:documentation>
+            <wsdl:input message="pkieeconn:OTMessageIn"/>
+            <wsdl:output message="pkieeconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="list_profiles">
+            <wsdl:documentation> List the available profiles on the EE </wsdl:documentation>
+            <wsdl:input message="pkieeconn:OTMessageIn"/>
+            <wsdl:output message="pkieeconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="retrieve_cert_authorities">
+            <wsdl:documentation> Returns the list of the Certificate authorities (and their certificate) known by the EE </wsdl:documentation>
+        	<wsdl:input message="pkieeconn:OTMessageIn"/>
+        	<wsdl:output message="pkieeconn:OTMessageOut"/>        	
+        </wsdl:operation>
+        <wsdl:operation name="search_for_certificates">
+            <wsdl:documentation> Search for certificates</wsdl:documentation>
+        	<wsdl:input message="pkieeconn:OTMessageIn"/>
+        	<wsdl:output message="pkieeconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="certificate_search_properties">
+            <wsdl:documentation> Returns information on how to perform a certificate search (available CAs, zones, profiles, etc...)</wsdl:documentation>
+        	<wsdl:input message="pkieeconn:OTMessageIn"/>
+        	<wsdl:output message="pkieeconn:OTMessageOut"/>
+        </wsdl:operation>
+	<wsdl:operation name="retrieve_pkcs12">
+	  <wsdl:documentation>Returns PKCS#12 data, after having been validated by an operator.</wsdl:documentation>
+	  <wsdl:input message="pkieeconn:OTMessageIn"/>
+	  <wsdl:output message="pkieeconn:OTMessageOut"/>
+	 </wsdl:operation>
+	
+    </wsdl:portType>
+    <wsdl:binding name="OTPKIEEConnectorSOAPBinding" type="pkieeconn:OTPKIEEConnectorSOAPPortType">
+        <wsdl:documentation> SOAP Binding for the OpenTrust PKI EE Connector</wsdl:documentation>
+        <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="version">
+            <soap:operation
+                soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2/version"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:output>
+        </wsdl:operation>
+      <wsdl:operation name="enrollment_request">
+        <soap:operation
+          soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2/enrollment_request"
+          style="rpc"/>
+        <wsdl:input>
+          <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+            namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+        </wsdl:input>
+        <wsdl:output>
+          <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+            namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+        </wsdl:output>
+      </wsdl:operation>
+      <wsdl:operation name="profile_properties">
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2/profile_properties"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="revocation_request">
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2/revocation_request"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:output>
+        </wsdl:operation>
+	    
+	<wsdl:operation name="recovery_request">
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2/recovery_request"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+	<wsdl:operation name="list_profiles">
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2/list_profiles"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:output>
+        </wsdl:operation>
+	<wsdl:operation name="certificate_search_properties">
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2/certificate_search_properties"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:output>
+        </wsdl:operation>
+	<wsdl:operation name="search_for_certificates">
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2/search_for_certificates"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:output>
+        </wsdl:operation>
+	<wsdl:operation name="retrieve_cert_authorities">
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2/retrieve_cert_authorities"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+            </wsdl:output>
+        </wsdl:operation>
+	<wsdl:operation name="retrieve_pkcs12">
+	  <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/2.2/retrieve_pkcs12" style="rpc"/>
+	  <wsdl:input>
+		    <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+	  </wsdl:input>
+	  <wsdl:output>
+		    <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/EE/SOAP/2.2"/>
+	  </wsdl:output>
+	</wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="OTPKIEEConnectorSOAPService">
+        <wsdl:documentation> SOAP service To access the OpenTrust PKI EE Connector via SOAP </wsdl:documentation>
+        <wsdl:port name="OTPKIEEConnectorSOAPPort" binding="pkieeconn:OTPKIEEConnectorSOAPBinding">
+            <soap:address location="https://kmip-pki.int.opentrust.com/EE/connector.cgi"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

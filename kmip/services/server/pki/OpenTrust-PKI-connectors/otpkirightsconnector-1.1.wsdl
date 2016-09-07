@@ -1,0 +1,207 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    WSDL description for the OpenTrust PKI Rights SOAP Connector, Version 1.1
+    
+    This code was developped by OpenTrust (http://www.opentrust.com/).
+
+    Copyright(C) 2000-2009 OpenTrust
+
+    Please refer to your contract/license or contact license@opentrust.com
+    for any question related to the license of this software.
+    
+    
+    $Id: otpkirightsconnector-1.1.wsdl 104284 2009-11-25 13:26:28Z fgarzon $
+    $HeadURL: svn+ssh://fgarzon@svn.int.opentrust.com/opt/svn/Offre/idxpki/tags/pki-4.7.0/sources/tools/SOAPConnector/otpkirightsconnector-1.1.wsdl $
+-->
+
+<wsdl:definitions targetNamespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"
+    xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+    xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:otmsg="http://www.opentrust.com/OpenTrust/XML/Message/1.2"
+    xmlns:pkirightsconn="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1">
+
+    <wsdl:types>
+        <wsdl:documentation>Types used by the OpenTrust PKI SOAP Connector</wsdl:documentation>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"
+            targetNamespace="http://www.opentrust.com/OpenTrust/XML/Message/1.2">
+            <xs:annotation>
+                <xs:documentation> External definition of the
+        OpenTrust Message schema </xs:documentation>
+            </xs:annotation>
+            <xs:include schemaLocation="otmessage-1.2.xsd"/>
+        </xs:schema>
+
+    </wsdl:types>
+    <wsdl:message name="OTMessageIn">
+        <wsdl:documentation>Input message used for every OpenTrust PKI Rights Connector operation : contains one
+            argument : an OTMessage </wsdl:documentation>
+        <wsdl:part name="InputParameter" type="otmsg:OTMessageType"/>
+    </wsdl:message>
+    <wsdl:message name="OTMessageOut">
+        <wsdl:documentation>Output message used for every OpenTrust PKI Rights Connector operation : contains one
+            argument : an OTMessage</wsdl:documentation>
+        <wsdl:part name="OutputParameter" type="otmsg:OTMessageType"/>
+    </wsdl:message>
+    <wsdl:portType name="OTPKIRightsConnectorSOAPPortType">
+        <wsdl:operation name="listGroups">
+            <wsdl:documentation>List existing groups </wsdl:documentation>
+            <wsdl:input message="pkirightsconn:OTMessageIn"/>
+            <wsdl:output message="pkirightsconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="getGroups">
+            <wsdl:documentation>Get the list of groups a given certificate belongs to.</wsdl:documentation>
+            <wsdl:input message="pkirightsconn:OTMessageIn"/>
+            <wsdl:output message="pkirightsconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="getGroupMembers">
+            <wsdl:input message="pkirightsconn:OTMessageIn"/>
+            <wsdl:output message="pkirightsconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="addDNToGroup">
+            <wsdl:input message="pkirightsconn:OTMessageIn"/>
+            <wsdl:output message="pkirightsconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="removeDNFromGroup">
+            <wsdl:input message="pkirightsconn:OTMessageIn"/>
+            <wsdl:output message="pkirightsconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="addGroupToGroup">
+            <wsdl:input message="pkirightsconn:OTMessageIn"/>
+            <wsdl:output message="pkirightsconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="removeGroupFromGroup">
+            <wsdl:input message="pkirightsconn:OTMessageIn"/>
+            <wsdl:output message="pkirightsconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="version">
+            <wsdl:input message="pkirightsconn:OTMessageIn"/>
+            <wsdl:output message="pkirightsconn:OTMessageOut"/>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="OTPKIRightsConnectorSOAPBinding" type="pkirightsconn:OTPKIRightsConnectorSOAPPortType">
+        <wsdl:documentation> SOAP Binding for the OpenTrust PKI Rights Connector </wsdl:documentation>
+        <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="listGroups">
+            <wsdl:documentation>List existing groups. </wsdl:documentation>
+            <soap:operation
+                soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1/listGroups"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getGroups">
+            <wsdl:documentation>Get the list of groups a given certificate belongs to.</wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1/getGroups"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="getGroupMembers">
+            <wsdl:documentation> Return the list of members for a given group. </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1/getGroupMembers"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+	    
+	<wsdl:operation name="addDNToGroup">
+            <wsdl:documentation> Add a certificate to a group. </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1/addDNToGroup"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+	<wsdl:operation name="removeDNFromGroup">
+            <wsdl:documentation> Remove a certificate from a group. </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1/removeDNFromGroup"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+	<wsdl:operation name="addGroupToGroup">
+            <wsdl:documentation> Add a group to another group. </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1/addGroupToGroup"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+	<wsdl:operation name="removeGroupFromGroup">
+            <wsdl:documentation> Remove a group from another group. </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1/removeGroupFromGroup"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+	<wsdl:operation name="version">
+            <wsdl:documentation> Returns version information about the Rights connnector. </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1/version"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/Rights/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+    </wsdl:binding>
+    <wsdl:service name="OTPKIRightsConnectorSOAPService">
+        <wsdl:documentation> Connector To access the OpenTrust PKI Rights
+Management System via SOAP </wsdl:documentation>
+        <wsdl:port name="OTPKIRightsConnectorSOAPPort" binding="pkirightsconn:OTPKIRightsConnectorSOAPBinding">
+            <soap:address location="https://servernotconfigured:8080/rights/connector.cgi"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

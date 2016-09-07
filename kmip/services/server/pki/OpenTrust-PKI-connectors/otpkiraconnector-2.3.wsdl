@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    WSDL description for the OpenTrust PKI RA SOAP Connector, Version 2.3
+    
+    This code was developped by OpenTrust (http://www.opentrust.com/).
+
+    Copyright(C) 2000-2009 OpenTrust
+
+    Please refer to your contract/license or contact license@opentrust.com
+    for any question related to the license of this software.
+    
+    
+    $Id: otpkiraconnector-2.3.wsdl 104284 2009-11-25 13:26:28Z fgarzon $
+    $HeadURL: svn+ssh://fgarzon@svn.int.opentrust.com/opt/svn/Offre/idxpki/tags/pki-4.7.0/sources/tools/SOAPConnector/otpkiraconnector-2.3.wsdl $
+-->
+
+<wsdl:definitions targetNamespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"
+    xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+    xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:otmsg="http://www.opentrust.com/OpenTrust/XML/Message/1.2"
+    xmlns:pkiraconn="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3">
+  <wsdl:documentation>
+    WSDL definition of the OpenTrust PKI RA Connector version 2.3
+  </wsdl:documentation>
+        <wsdl:types>
+        <wsdl:documentation>Types used by the OpenTrust-PKI SOAP Connector</wsdl:documentation>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"
+          targetNamespace="http://www.opentrust.com/OpenTrust/XML/Message/1.2"
+            xmlns:otmsg="http://www.opentrust.com/OpenTrust/XML/Message/1.2">
+            <xs:annotation>
+              <xs:documentation> External definition of the OpenTrust Message schema (version 1.2)</xs:documentation>
+            </xs:annotation>
+            <xs:include schemaLocation="otmessage-1.2.xsd"/>
+        </xs:schema>
+
+    </wsdl:types>
+    <wsdl:message name="OTMessageIn">
+        <wsdl:documentation>Input message used for every OpenTrust PKI RA Connector operation : contains one
+            argument : an OTMessage </wsdl:documentation>
+        <wsdl:part name="InputParameter" type="otmsg:OTMessageType"/>
+    </wsdl:message>
+    <wsdl:message name="OTMessageOut">
+        <wsdl:documentation>Output message used for every OpenTrust PKI RA Connector operation : contains one
+            argument : an OTMessage</wsdl:documentation>
+        <wsdl:part name="OutputParameter" type="otmsg:OTMessageType"/>
+    </wsdl:message>
+    <wsdl:portType name="OTPKIRAConnectorSOAPPortType">
+      <wsdl:operation name="version">
+        <wsdl:documentation> Returns Version Information about the PKI software and the RA connector</wsdl:documentation>
+        <wsdl:input message="pkiraconn:OTMessageIn"/>
+        <wsdl:output message="pkiraconn:OTMessageOut"/>
+      </wsdl:operation>
+      <wsdl:operation name="enroll">
+            <wsdl:documentation> Generates a new certificate </wsdl:documentation>
+            <wsdl:input message="pkiraconn:OTMessageIn"/>
+            <wsdl:output message="pkiraconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="list_profiles">
+            <wsdl:documentation> Returns the list of available certificate profiles </wsdl:documentation>
+            <wsdl:input message="pkiraconn:OTMessageIn"/>
+            <wsdl:output message="pkiraconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="profile_properties">
+            <wsdl:documentation> Returns information about the certificate profile given as argument. </wsdl:documentation>
+            <wsdl:input message="pkiraconn:OTMessageIn"/>
+            <wsdl:output message="pkiraconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="revoke">
+            <wsdl:documentation> Revokes a certificate </wsdl:documentation>
+            <wsdl:input message="pkiraconn:OTMessageIn"/>
+            <wsdl:output message="pkiraconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="recover">
+            <wsdl:documentation> Recovers a certificate </wsdl:documentation>
+            <wsdl:input message="pkiraconn:OTMessageIn"/>
+            <wsdl:output message="pkiraconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="renew">
+            <wsdl:documentation> Renews a certificate </wsdl:documentation>
+            <wsdl:input message="pkiraconn:OTMessageIn"/>
+            <wsdl:output message="pkiraconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="hold">
+          <wsdl:documentation>Puts a certificate on hold (currently does nothing)</wsdl:documentation>
+            <wsdl:input message="pkiraconn:OTMessageIn"/>
+            <wsdl:output message="pkiraconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="resume">
+          <wsdl:documentation> Reactivates a certificate after a hold operation (currently does nothing) </wsdl:documentation>
+            <wsdl:input message="pkiraconn:OTMessageIn"/>
+            <wsdl:output message="pkiraconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="retrieve_cert_authorities">
+          <wsdl:documentation> Returns information on trusted
+          certificate authorities : CRL, certificate, etc..
+          </wsdl:documentation>
+            <wsdl:input message="pkiraconn:OTMessageIn"/>
+            <wsdl:output message="pkiraconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="certificate_search_properties">
+          <wsdl:documentation> Returns information on how to perform a
+            search with the search_for_certificates operation :
+            available criteria, profiles, etc..
+          </wsdl:documentation>
+            <wsdl:input message="pkiraconn:OTMessageIn"/>
+            <wsdl:output message="pkiraconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="search_for_certificates">
+          <wsdl:documentation> Multi-criteria search operation used to
+          query the OpenTrust PKI certificate database
+          </wsdl:documentation>
+            <wsdl:input message="pkiraconn:OTMessageIn"/>
+            <wsdl:output message="pkiraconn:OTMessageOut"/>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="OTPKIRAConnectorSOAPBinding" type="pkiraconn:OTPKIRAConnectorSOAPPortType">
+        <wsdl:documentation> SOAP Binding for the OpenTrust PKI RA
+        Connector </wsdl:documentation>
+        <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+      <wsdl:operation name="version">
+        <wsdl:documentation>Returns Version Information about the PKI software</wsdl:documentation>
+        <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/version"
+          style="rpc"/>
+        <wsdl:input>
+          <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+            namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+        </wsdl:input>
+        <wsdl:output>
+          <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+            namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+        </wsdl:output>
+      </wsdl:operation>
+      <wsdl:operation name="enroll">
+            <wsdl:documentation>Generates a new certificate </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/enroll"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="list_profiles">
+            <wsdl:documentation>Returns the list of available certificate profiles</wsdl:documentation>
+            <soap:operation
+                soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/list_profiles"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="profile_properties">
+            <wsdl:documentation>Returns information about the certificate profile given as argument.</wsdl:documentation>
+            <soap:operation
+                soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/profile_properties"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="revoke">
+            <wsdl:documentation>Revokes a certificate </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/revoke"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="recover">
+            <wsdl:documentation>Recovers a key-pair </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/recover"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="renew">
+            <wsdl:documentation>Renews a certificate </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/renew"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="hold">
+            <wsdl:documentation>Puts a certificate on hold (currently does nothing)</wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/hold"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="resume">
+            <wsdl:documentation>Reactivates a certificate after a hold operation (currently does nothing)</wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/resume"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="retrieve_cert_authorities">
+          <wsdl:documentation> Returns information on trusted
+          certificate authorities : CRL, certificate, etc..
+          </wsdl:documentation>
+          <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/retrieve_cert_authorities"
+                          style="rpc"/>
+          <wsdl:input>
+            <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                       namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+          </wsdl:input>
+          <wsdl:output>
+            <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                       namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+          </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="certificate_search_properties">
+          <wsdl:documentation>Returns information on how to perform
+          a search with the search_for_certificates operation :
+          available criteria, profiles, etc..
+          </wsdl:documentation>
+          <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/certificate_search_properties"
+                          style="rpc"/>
+          <wsdl:input>
+            <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                       namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+          </wsdl:input>
+          <wsdl:output>
+            <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                       namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+          </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="search_for_certificates">
+            <wsdl:documentation>Multi-criteria search operation used
+            to query the OpenTrust PKI certificate database
+            </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3/search_for_certificates"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/RA/SOAP/2.3"/>
+            </wsdl:output>
+        </wsdl:operation>
+    </wsdl:binding>
+    <wsdl:service name="OTPKIRAConnectorSOAPService">
+        <wsdl:documentation>SOAP service To access the OpenTrust PKI RA Connector via SOAP </wsdl:documentation>
+        <wsdl:port name="OTPKIRAConnectorSOAPPort" binding="pkiraconn:OTPKIRAConnectorSOAPBinding">
+            <soap:address location="https://kmip-pki.int.opentrust.com/RA/connector.cgi"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>

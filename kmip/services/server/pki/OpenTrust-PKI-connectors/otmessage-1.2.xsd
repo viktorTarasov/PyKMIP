@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    XSD description for the OpenTrust Message format , Version 1.2
+    
+    This code was developped OpenTrust (http://www.opentrust.com/).
+    
+    Copyright(C) 2000-2009 OpenTrust
+    
+    Please refer to your contract/license or contact license@opentrust.com
+    for any question related to the license of this software.
+    
+    
+    $Id: otmessage-1.2.xsd 102947 2009-10-22 14:44:18Z fgarzon $
+    $HeadURL: svn+ssh://fgarzon@svn.int.opentrust.com/opt/svn/Offre/otc/tags/otc-4.8.0/tools/SOAPConnector/otmessage-1.2.xsd $
+-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"
+    targetNamespace="http://www.opentrust.com/OpenTrust/XML/Message/1.2"
+    xmlns="http://www.opentrust.com/OpenTrust/XML/Message/1.2">
+    <xs:annotation>
+        <xs:documentation>
+XML Schema definition of the data types used by the OpenTrust SOAP
+Message format. This schema defines a set of general data structures
+(Array, HashTable, Value), used in the message sent or received by an
+OpenTrust SOAP Connector, V1.2. ($LastChangedRevision: 45552 $)
+        </xs:documentation>
+    </xs:annotation>
+    <xs:element name="Value" type="xs:string" nillable="true">
+        <xs:annotation>
+            <xs:documentation>
+This is the most basic type of data. This element is used to store a
+data value. It is encoded as a String, and its signification depends
+on the context. </xs:documentation>
+        </xs:annotation>
+    </xs:element>
+    <xs:element name="Array">
+        <xs:annotation>
+            <xs:documentation> An array is an ordered list of Items. </xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="Item"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="HashTable">
+        <xs:annotation>
+            <xs:documentation>
+A Hashtable is a data structure also known as dictionary, associative
+array, etc... It is used to contain data referenced by a named key. a
+Hashtable contains Items, and the keys are an attribute of these
+elements. The same key attribute MUST NOT appear in more than one Item
+contained in the HashTable. Applications MUST NOT rely on the order in
+which the containing Item appear.</xs:documentation>
+        </xs:annotation>
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="Item"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Item" nillable="true">
+        <xs:annotation>
+            <xs:documentation>
+An Item is an element of an Array or a HashTable. 
+If contained in a
+HashTable, its attribute "key" is used as key to reference the Item in
+the HashTable. It is not significant if the Item is contained in an
+Array. It is a container for one of the three "basic" data types :
+Value, Array and HashTable. </xs:documentation>
+        </xs:annotation>
+        <xs:complexType mixed="false">
+            <xs:choice minOccurs="1" maxOccurs="1">
+                <xs:element ref="Value"/>
+                <xs:element ref="Array"/>
+                <xs:element ref="HashTable"/>
+            </xs:choice>
+            <xs:attribute name="key" use="required" type="xs:string"/>
+        </xs:complexType>
+    </xs:element>
+    <!--    <xs:attributeGroup name="attlist.Item">
+        <xs:attribute name="key" use="required" type="xs:string"/>
+        </xs:attributeGroup> -->
+    <xs:element name="Message">
+        <xs:annotation>
+            <xs:documentation>
+An OpenTrust Message is a general purpose element used to carry Input
+and Ouput messages of the Opentrust Applications SOAP connector
+operations. These messages are not typed, and designed to transport
+any structured (un-typed) data, with the help of the following
+containers : Array, Hashtable, and Value.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:complexType mixed="false">
+            <xs:choice minOccurs="1" maxOccurs="1">
+                <xs:element ref="Value"/>
+                <xs:element ref="Array"/>
+                <xs:element ref="HashTable"/>
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name="OTMessageType">
+        <xs:sequence minOccurs="0" maxOccurs="1">
+            <xs:element ref="Message"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

@@ -48,3 +48,19 @@ class KmipOperationFailure(Exception):
         """
         msg = "{0}: {1} - {2}".format(status.name, reason.name, message)
         super(KmipOperationFailure, self).__init__(msg)
+
+
+class PKIConnectionFailure(Exception):
+    """
+    An exception raised for errors with the PKI service connection.
+    """
+    pass
+
+
+class PKIServiceError(Exception):
+    """
+    An exception raised for errors with the call to PKI service .
+    """
+    pass
+
+

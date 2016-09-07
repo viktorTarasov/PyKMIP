@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    WSDL description for the OpenTrust PKI CA SOAP Connector, Version 1.1
+    
+    This code was developped by OpenTrust (http://www.opentrust.com/).
+
+    Copyright(C) 2000-2009 OpenTrust
+
+    Please refer to your contract/license or contact license@opentrust.com
+    for any question related to the license of this software.
+    
+    
+    $Id: otpkicaconnector-1.1.wsdl 104284 2009-11-25 13:26:28Z fgarzon $
+    $HeadURL: svn+ssh://fgarzon@svn.int.opentrust.com/opt/svn/Offre/idxpki/tags/pki-4.7.0/sources/tools/SOAPConnector/otpkicaconnector-1.1.wsdl $
+-->
+
+<wsdl:definitions targetNamespace="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1"
+    xmlns:http="http://schemas.xmlsoap.org/wsdl/http/"
+    xmlns:mime="http://schemas.xmlsoap.org/wsdl/mime/"
+    xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+    xmlns:soapenc="http://schemas.xmlsoap.org/soap/encoding/"
+    xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/" xmlns:xs="http://www.w3.org/2001/XMLSchema"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:otmsg="http://www.opentrust.com/OpenTrust/XML/Message/1.2"
+    xmlns:pkicaconn="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1">
+
+    <wsdl:types>
+        <wsdl:documentation>Types used by the OpenTrust PKI SOAP Connector</wsdl:documentation>
+        <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified"
+            targetNamespace="http://www.opentrust.com/OpenTrust/XML/Message/1.2">
+            <xs:annotation>
+                <xs:documentation> External definition of the
+        OpenTrust Message schema </xs:documentation>
+            </xs:annotation>
+            <xs:include schemaLocation="otmessage-1.2.xsd"/>
+        </xs:schema>
+
+    </wsdl:types>
+    <wsdl:message name="OTMessageIn">
+        <wsdl:documentation>Input message used for every OpenTrust PKI CA Connector operation : contains one
+            argument : an OTMessage </wsdl:documentation>
+        <wsdl:part name="InputParameter" type="otmsg:OTMessageType"/>
+    </wsdl:message>
+    <wsdl:message name="OTMessageOut">
+        <wsdl:documentation>Output message used for every OpenTrust PKI CA Connector operation : contains one
+            argument : an OTMessage</wsdl:documentation>
+        <wsdl:part name="OutputParameter" type="otmsg:OTMessageType"/>
+    </wsdl:message>
+    <wsdl:portType name="OTPKICAConnectorSOAPPortType">
+        <wsdl:operation name="list_ca">
+            <wsdl:documentation>List existing CAs</wsdl:documentation>
+            <wsdl:input message="pkicaconn:OTMessageIn"/>
+            <wsdl:output message="pkicaconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="ca_properties">
+            <wsdl:documentation>Get the properties of a given CA</wsdl:documentation>
+            <wsdl:input message="pkicaconn:OTMessageIn"/>
+            <wsdl:output message="pkicaconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="issue_crl">
+            <wsdl:documentation>Issue the CRL of a given CA</wsdl:documentation>
+            <wsdl:input message="pkicaconn:OTMessageIn"/>
+            <wsdl:output message="pkicaconn:OTMessageOut"/>
+        </wsdl:operation>
+        <wsdl:operation name="version">
+            <wsdl:input message="pkicaconn:OTMessageIn"/>
+            <wsdl:output message="pkicaconn:OTMessageOut"/>
+        </wsdl:operation>
+    </wsdl:portType>
+    <wsdl:binding name="OTPKICAConnectorSOAPBinding" type="pkicaconn:OTPKICAConnectorSOAPPortType">
+        <wsdl:documentation> SOAP Binding for the OpenTrust PKI CA Connector </wsdl:documentation>
+        <soap:binding style="rpc" transport="http://schemas.xmlsoap.org/soap/http"/>
+        <wsdl:operation name="list_ca">
+            <wsdl:documentation>List existing CAs</wsdl:documentation>
+            <soap:operation
+                soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1/list_ca"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="ca_properties">
+            <wsdl:documentation>Get the properties of a given CA</wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1/ca_properties"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+        <wsdl:operation name="issue_crl">
+            <wsdl:documentation>Issue the CRL of a given CA</wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1/issue_crl"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+	<wsdl:operation name="version">
+            <wsdl:documentation> Returns version information about the CA connnector. </wsdl:documentation>
+            <soap:operation soapAction="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1/version"
+                style="rpc"/>
+            <wsdl:input>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1"/>
+            </wsdl:input>
+            <wsdl:output>
+                <soap:body encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" use="literal"
+                    namespace="http://www.opentrust.com/OpenTrust/PKI/Connector/CA/SOAP/1.1"/>
+            </wsdl:output>
+        </wsdl:operation>
+
+    </wsdl:binding>
+    <wsdl:service name="OTPKICAConnectorSOAPService">
+        <wsdl:documentation> Connector To access the OpenTrust PKI CA via SOAP </wsdl:documentation>
+        <wsdl:port name="OTPKICAConnectorSOAPPort" binding="pkicaconn:OTPKICAConnectorSOAPBinding">
+            <soap:address location="https://kmip-pki.int.opentrust.com/CA/connector.cgi"/>
+        </wsdl:port>
+    </wsdl:service>
+</wsdl:definitions>
