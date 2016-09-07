@@ -58,7 +58,7 @@ class AttributeValueFactory(object):
         elif name is enums.AttributeType.DIGITAL_SIGNATURE_ALGORITHM:
             raise NotImplementedError()
         elif name is enums.AttributeType.DIGEST:
-            return attributes.Digest()
+            return self._create_digest(value)
         elif name is enums.AttributeType.OPERATION_POLICY_NAME:
             return attributes.OperationPolicyName(value)
         elif name is enums.AttributeType.CRYPTOGRAPHIC_USAGE_MASK:
@@ -173,6 +173,14 @@ class AttributeValueFactory(object):
                 mask |= flag.value
 
         return attributes.CryptographicUsageMask(mask)
+
+    def _create_digest(self, params):
+        if params is None:
+            return attributes.Digest()
+        elif isinstance(params, bytes):
+            return attributes.Digest.create(digest_value=params)
+        elif isinstance(params, dict):
+            return attributes.Digest.create(**params)
 
     def _create_object_group(self, group):
         if group is not None and not isinstance(group, str):
