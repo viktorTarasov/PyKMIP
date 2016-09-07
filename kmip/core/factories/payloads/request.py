@@ -27,6 +27,7 @@ from kmip.core.messages.payloads import get_attribute_list
 from kmip.core.messages.payloads import locate
 from kmip.core.messages.payloads import notify
 from kmip.core.messages.payloads import query
+from kmip.core.messages.payloads import put
 from kmip.core.messages.payloads import rekey_key_pair
 from kmip.core.messages.payloads import register
 from kmip.core.messages.payloads import revoke
@@ -78,3 +79,6 @@ class RequestPayloadFactory(PayloadFactory):
 
     def _create_certify_payload(self):
         return certify.CertifyRequestPayload()
+
+    def _create_put_payload(self):
+        return put.PutRequestPayload()
