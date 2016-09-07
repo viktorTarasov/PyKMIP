@@ -20,6 +20,7 @@ import re
 import binascii
 
 from cryptography import x509
+from cryptography.x509.oid import NameOID
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
@@ -33,6 +34,34 @@ from kmip.services.server.crypto import api
 
 from kmip.core.enums import AttributeType
 
+'''
+From OpenSSL
+
+static BIT_STRING_BITNAME ns_cert_type_table[] = {
+    {0, "SSL Client", "client"},
+    {1, "SSL Server", "server"},
+    {2, "S/MIME", "email"},
+    {3, "Object Signing", "objsign"},
+    {4, "Unused", "reserved"},
+    {5, "SSL CA", "sslCA"},
+    {6, "S/MIME CA", "emailCA"},
+    {7, "Object Signing CA", "objCA"},
+    {-1, NULL, NULL}
+};
+
+static BIT_STRING_BITNAME key_usage_type_table[] = {
+    {0, "Digital Signature", "digitalSignature"},
+    {1, "Non Repudiation", "nonRepudiation"},
+    {2, "Key Encipherment", "keyEncipherment"},
+    {3, "Data Encipherment", "dataEncipherment"},
+    {4, "Key Agreement", "keyAgreement"},
+    {5, "Certificate Sign", "keyCertSign"},
+    {6, "CRL Sign", "cRLSign"},
+    {7, "Encipher Only", "encipherOnly"},
+    {8, "Decipher Only", "decipherOnly"},
+    {-1, NULL, NULL}
+};
+'''
 
 class ASN1(object):
 
@@ -313,30 +342,125 @@ class CryptographyEngine(api.CryptographicEngine):
 
         return public_key, private_key
 
+    def load_certificate(self, value, encoding=serialization.Encoding.DER):
+        if isinstance(encoding, six.string_types):
+            if encoding == 'PEM':
+                encoding = serialization.Encoding.PEM
+            elif encoding == 'DER':
+                encoding = serialization.Encoding.DER
+
+        if encoding == serialization.Encoding.DER:
+            return x509.load_der_x509_certificate(value, default_backend())
+        elif encoding == serialization.Encoding.PEM:
+            return x509.load_pem_x509_certificate(value, default_backend())
+        else:
+            raise TypeError("Invalid encoding type")
+
     def X509_get_public_key(self, value, encoding=serialization.Encoding.DER):
-        # from certificate get blob of public key
-        cert = x509.load_der_x509_certificate(value, default_backend())
+        cert = self.load_certificate(value, encoding)
         pub_key_blob = cert.public_key().public_bytes(
             encoding=encoding,
             format=serialization.PublicFormat.SubjectPublicKeyInfo)
         return pub_key_blob
 
+    def X509_get_common_name(self, value, encoding=serialization.Encoding.DER):
+        cert = self.load_certificate(value, encoding)
+        cn = cert.subject.get_attributes_for_oid(NameOID.COMMON_NAME)
+        return cn[0].value
+
+    def X509_get_subject(self, value, encoding=serialization.Encoding.DER):
+        cert = self.load_certificate(value, encoding)
+        subject = cert.subject
+        return subject
+
+    def X509_get_serial(self, value, encoding=serialization.Encoding.DER):
+        cert = self.load_certificate(value, encoding)
+        return hex(cert.serial)[2:].upper()
+
+    def X509Name_str(self, x509_name):
+        short_names = {
+            'commonName': 'CN',
+            'countryName': 'C',
+            'organizationName': 'O',
+            'organizationalUnitName': 'OU'
+        }
+
+        name_str = ""
+        for attr in x509_name:
+            if len(name_str) > 0:
+                name_str += ", "
+            name_str += "{0}={1}".format(short_names[attr.oid._name], attr.value)
+        return name_str
+
     def X509_extension_blob(self, type_name, critical, value):
         if isinstance(type_name, six.string_types):
             type_name = bytes(type_name, 'ascii')
         elif not isinstance(type_name, bytes):
-            TypeError("Extention type name has to be 'str' or 'bytes'")
+            raise TypeError("Extention type name has to be 'str' or 'bytes'")
 
         if isinstance(value, six.string_types):
             value = bytes(value, 'ascii')
         elif not isinstance(value, bytes):
-            TypeError("Extention value has to be 'str' or 'bytes'")
+            raise TypeError("Extention value has to be 'str' or 'bytes'")
 
         ext = crypto.X509Extension(type_name, critical, value)
         return ext.get_data()
 
+    def X509_get_key_usage(self, cert_blob, encoding=serialization.Encoding.DER):
+        cert = self.load_certificate(cert_blob, encoding)
+
+        usage_masks = {
+            'private key': list(),
+            'public key': list(),
+            'certificate': list()
+        }
+        for ext in cert.extensions:
+            if isinstance(ext.value, x509.KeyUsage):
+                kusage = ext.value
+                if kusage.digital_signature == True:
+                    usage_masks['private key'].append(enums.CryptographicUsageMask.SIGN)
+                    usage_masks['public key'].append(enums.CryptographicUsageMask.VERIFY)
+                    usage_masks['certificate'].append(enums.CryptographicUsageMask.SIGN)
+
+                if kusage.content_commitment == True:
+                    usage_masks['private key'].append(enums.CryptographicUsageMask.CONTENT_COMMITMENT)
+                    usage_masks['certificate'].append(enums.CryptographicUsageMask.CONTENT_COMMITMENT)
+
+                if kusage.key_encipherment == True:
+                    usage_masks['private key'].append(enums.CryptographicUsageMask.UNWRAP_KEY)
+                    usage_masks['public key'].append(enums.CryptographicUsageMask.WRAP_KEY)
+                    usage_masks['certificate'].append(enums.CryptographicUsageMask.WRAP_KEY)
+
+                if kusage.data_encipherment == True:
+                    usage_masks['private key'].append(enums.CryptographicUsageMask.DECRYPT)
+                    usage_masks['public key'].append(enums.CryptographicUsageMask.ENCRYPT)
+                    usage_masks['certificate'].append(enums.CryptographicUsageMask.ENCRYPT)
+
+                if kusage.key_agreement == True:
+                    usage_masks['private key'].append(enums.CryptographicUsageMask.KEY_AGREEMENT)
+                    usage_masks['public key'].append(enums.CryptographicUsageMask.KEY_AGREEMENT)
+                    usage_masks['certificate'].append(enums.CryptographicUsageMask.KEY_AGREEMENT)
+                    if kusage.encipher_only == True:
+                        usage_masks['public key'].append(enums.CryptographicUsageMask.ENCRYPT)
+                        if enums.CryptographicUsageMask.ENCRYPT not in usage_masks['certificate']:
+                            usage_masks['certificate'].append(enums.CryptographicUsageMask.ENCRYPT)
+                    if kusage.decipher_only == True:
+                        usage_masks['private key'].append(enums.CryptographicUsageMask.DECRYPT)
+                        if enums.CryptographicUsageMask.DECRYPT not in usage_masks['certificate']:
+                            usage_masks['certificate'].append(enums.CryptographicUsageMask.DECRYPT)
+
+                if kusage.key_cert_sign == True:
+                    usage_masks['private key'].append(enums.CryptographicUsageMask.CERTIFICATE_SIGN)
+                    usage_masks['certificate'].append(enums.CryptographicUsageMask.CERTIFICATE_SIGN)
+
+                if kusage.crl_sign == True:
+                    usage_masks['private key'].append(enums.CryptographicUsageMask.CRL_SIGN)
+                    usage_masks['certificate'].append(enums.CryptographicUsageMask.CRL_SIGN)
+
+        return usage_masks
+
     def X509_DN_blob_from_str(self, dn_str):
-        rdns = re.findall('(C|O|CN|OU|DC)=([ \w-]+),?', dn_str)
+        rdns = re.findall('(C|O|CN|OU|DC)=([\. \w-]+),?', dn_str)
         x509_name = crypto.X509Name(crypto.X509().get_subject())
         for name, value in rdns:
             setattr(x509_name, name, value)
@@ -344,6 +468,7 @@ class CryptographyEngine(api.CryptographicEngine):
         return x509_name.der()
 
     RDN_names = {
+        b'550406': 'C',
         b'55040a': 'O',
         b'55040b': 'OU',
         b'550403': 'CN'
@@ -369,6 +494,8 @@ class CryptographyEngine(api.CryptographicEngine):
                     oid = binascii.hexlify(item.data)
                 if item.tag == 0x0C:
                     value = item.data.decode("utf-8")
+                if item.tag == 0x13:
+                    value = item.data.decode("utf-8")
 
             if oid in self.RDN_names:
                 setattr(subject, self.RDN_names[oid], value)
@@ -392,6 +519,23 @@ class CryptographyEngine(api.CryptographicEngine):
             ext_value = ext_value.encode("utf-8")
             req.add_extensions([
                 crypto.X509Extension(b'subjectAltName', False, ext_value)])
+
+    def PKCS10_get_subjectAltName(self, req, alt_name_type=None):
+        extensions = req.get_extensions()
+        for extension in extensions:
+            if extension.get_short_name() == b'subjectAltName':
+                asn1 = ASN1(extension.get_data())
+                item = asn1
+                while len(item.items):
+                    item = item.items[0]
+                prefix_num = item.tag & 0x1F
+                if prefix_num in self.GeneralNames:
+                    prefix = self.GeneralNames[prefix_num]
+                    if alt_name_type is not None:
+                        if prefix == alt_name_type:
+                            return item.data.decode()
+                    return prefix + ':' + item.data.decode()
+        return None
 
     def PKCS10_create(self, private_key, attributes):
         prvkey = crypto.load_privatekey(crypto.FILETYPE_ASN1, private_key)
