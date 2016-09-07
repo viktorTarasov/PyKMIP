@@ -15,6 +15,7 @@
 
 import logging
 import six
+import re
 import sqlalchemy
 
 from sqlalchemy.orm import exc
@@ -31,7 +32,7 @@ from kmip.core.factories import secrets
 
 from kmip.core import objects as core_objects
 
-from kmip.core.enums import LinkType
+from kmip.core.enums import LinkType, Tags
 
 from kmip.core.messages import contents
 from kmip.core.messages import messages
@@ -45,6 +46,7 @@ from kmip.core.messages.payloads import discover_versions
 from kmip.core.messages.payloads import get
 from kmip.core.messages.payloads import get_attribute_list
 from kmip.core.messages.payloads import query
+from kmip.core.messages.payloads import put
 from kmip.core.messages.payloads import register
 
 from kmip.core import misc
@@ -56,7 +58,7 @@ from kmip.pie import sqltypes
 from kmip.services.server import policy
 from kmip.services.server.crypto import engine
 from kmip.services.server.pki import engine as pki_engine
-
+from kmip.services.server.apache import engine as apache_engine
 
 class KmipEngine(object):
     """
@@ -91,7 +93,7 @@ class KmipEngine(object):
         """
         self._logger = logging.getLogger('kmip.server.engine')
         if logstream is not None:
-            self._logger.addHandler(logstream)
+            self._logger.handlers = [logstream]
             self._logger.setLevel(logstream.level)
 
         self._cryptography_engine = engine.CryptographyEngine()
@@ -638,13 +640,14 @@ class KmipEngine(object):
                     "The {0} attribute is unsupported.".format(attribute_name)
                 )
         else:
-            field = None
-            value = attribute_value.value
+            can_change = False
 
             if attribute_name == 'Cryptographic Algorithm':
                 field = 'cryptographic_algorithm'
+                value = attribute_value.value
             elif attribute_name == 'Cryptographic Length':
                 field = 'cryptographic_length'
+                value = attribute_value.value
             elif attribute_name == 'Cryptographic Usage Mask':
                 field = 'cryptographic_usage_masks'
                 value = list()
@@ -653,24 +656,40 @@ class KmipEngine(object):
                         value.append(e)
             elif attribute_name == 'Contact Information':
                 field = 'contact_information'
-                value = sqltypes.ContactInformation(value)
-
-            if field:
+                value = sqltypes.ContactInformation(attribute_value.value)
+            elif attribute_name == 'Fresh':
+                field = 'fresh'
+                value = attribute_value.value
                 existing_value = getattr(managed_object, field)
-                if existing_value:
-                    if existing_value != value:
-                        raise exceptions.InvalidField(
-                            "Cannot overwrite the {0} attribute.".format(
-                                attribute_name
-                            )
-                        )
-                else:
+                if existing_value == False and value == True:
+                   raise exceptions.InvalidField(
+                        "'Fresh' attribute can only be changed from"
+                        "'True' to 'False'")
+                elif existing_value != value:
                     setattr(managed_object, field, value)
+            elif attribute_name == 'X.509 Certificate Subject':
+                field = None
+                pass
             else:
                 # TODO (peterhamilton) Remove when all attributes are supported
                 raise exceptions.InvalidField(
                     "The {0} attribute is unsupported.".format(attribute_name)
                 )
+
+            if field is None:
+                self._logger.info("Ignored set of '{0}' attribute".format(attribute_name))
+                return
+
+            existing_value = getattr(managed_object, field)
+            if existing_value:
+                if existing_value != value:
+                    raise exceptions.InvalidField(
+                        "Cannot overwrite the {0} attribute.".format(
+                            attribute_name
+                        )
+                    )
+            else:
+                setattr(managed_object, field, value)
 
     def _set_links_for_certificate(self, certificate):
         if not isinstance(certificate, objects.Certificate):
@@ -757,6 +776,8 @@ class KmipEngine(object):
             return self._process_rekey_key_pair(payload)
         elif operation == enums.Operation.CERTIFY:
             return self._process_certify(payload)
+        elif operation == enums.Operation.PUT:
+            return self._process_put(payload)
         else:
             raise exceptions.OperationNotSupported(
                 "{0} operation is not supported by the server.".format(
@@ -1142,8 +1163,12 @@ class KmipEngine(object):
 
         if payload.private_key_uuid:
             replaced_uuid = payload.private_key_uuid.value
+            if isinstance(replaced_uuid, six.string_types):
+                replaced_uuid = int(replaced_uuid)
+
         # TODO  if payload.offset:
         #           offset = payload.offset
+
         if payload.public_key_template_attribute:
             public_key_attributes = self._process_template_attribute(
                 payload.public_key_template_attribute
@@ -1215,6 +1240,14 @@ class KmipEngine(object):
             replaced_private_key.unique_identifier)
         private_key_attributes[ln_replaced_prvkey.attribute_name.value] = \
             ln_replaced_prvkey.attribute_value
+
+        # Set FRESH flag to True
+        fresh_true = self._attribute_factory.create_attribute(
+            enums.AttributeType.FRESH,
+            True)
+        private_key_attributes[fresh_true.attribute_name.value] = \
+            fresh_true.attribute_value
+
         self._set_attributes_on_managed_object(
             private_key,
             private_key_attributes
@@ -1226,6 +1259,10 @@ class KmipEngine(object):
             replaced_public_key.unique_identifier)
         public_key_attributes[ln_replaced_pubkey.attribute_name.value] = \
             ln_replaced_pubkey.attribute_value
+
+        public_key_attributes[fresh_true.attribute_name.value] = \
+            fresh_true.attribute_value
+
         self._set_attributes_on_managed_object(
             public_key,
             public_key_attributes
@@ -1335,6 +1372,11 @@ class KmipEngine(object):
             attributes = self._process_template_attribute(
                 payload.template_attribute)
 
+        fresh_attr = self._attribute_factory.create_attribute(
+            enums.AttributeType.FRESH,
+            True)
+        attributes[fresh_attr.attribute_name.value] = fresh_attr.attribute_value
+
         if uid is not None:
             cert_uid = self._process_certify_with_uid(uid, attributes)
         else:
@@ -1371,10 +1413,94 @@ class KmipEngine(object):
 
         pki = pki_engine.PKIEngine()
         pki.connect()
-        pki.sign_certificate_request(req_blob)
 
-        cert_uid = 'cert-uid'
-        return cert_uid
+        signed_cert = pki.sign_certificate_request(req_blob)
+        if not signed_cert:
+            raise exceptions.KmipError("Failed to sign certificate request")
+
+        ca_cert = None
+        ca_certs = pki.retrieve_cert_authorities()
+        for cert in ca_certs:
+            subject = re.findall('CN=([\. \w-]+),?', cert['subject'])
+            if subject[0] == signed_cert['issuer commonName']:
+                ca_cert = cert
+                ca_cert['commonName'] = subject[0]
+                ca_cert['value'] = ca_cert['value']
+
+        if ca_cert is not None:
+            ca_usage_masks = self._cryptography_engine.X509_get_key_usage(
+                ca_cert['value'])
+
+            ca_cert_object = objects.X509Certificate(
+                ca_cert['value'],
+                ca_usage_masks['certificate'],
+                ca_cert['commonName'])
+
+            fresh_false = self._attribute_factory.create_attribute(
+                enums.AttributeType.FRESH,
+                False)
+            self._set_attributes_on_managed_object(
+                ca_cert_object,
+                {
+                    fresh_false.attribute_name.value: fresh_false.attribute_value
+                }
+            )
+
+            self._data_session.add(ca_cert_object)
+            self._data_session.commit()
+            ca_cert['uid'] = ca_cert_object.unique_identifier
+
+        if enums.AttributeType.CRYPTOGRAPHIC_USAGE_MASK.value in attributes:
+            usage_masks = attributes[enums.AttributeType.CRYPTOGRAPHIC_USAGE_MASK.value]
+            attributes.pop(enums.AttributeType.CRYPTOGRAPHIC_USAGE_MASK.value)
+        else:
+            usage_masks = self._cryptography_engine.X509_get_key_usage(signed_cert['value'])
+
+        if enums.AttributeType.NAME.value in attributes:
+            names = attributes[enums.AttributeType.NAME.value]
+            name = str(names[0])
+            names = names[1:]
+            if not names:
+                attributes.pop(enums.AttributeType.NAME.value)
+            else:
+                attributes[enums.AttributeType.NAME.value] = names
+        else:
+            name = self._cryptography_engine.X509_get_common_name(signed_cert['value'])
+
+        link_to_pubkey = self._attribute_factory.create_link_attribute(
+            LinkType.PUBLIC_KEY_LINK,
+            uid)
+        attributes[link_to_pubkey.attribute_name.value] = link_to_pubkey.attribute_value
+
+        cert_object = objects.X509Certificate(
+            signed_cert['value'],
+            usage_masks['certificate'],
+            name)
+        self._set_attributes_on_managed_object(
+            cert_object,
+            attributes
+        )
+        self._data_session.add(cert_object)
+        self._data_session.commit()
+
+        if ca_cert is not None:
+            link = self._attribute_factory.create_link_attribute(
+                LinkType.CERTIFICATE_LINK,
+                ca_cert['uid'])
+            self._set_attributes_on_managed_object(
+                cert_object,   {
+                    link.attribute_name.value: link.attribute_value
+                })
+            self._data_session.commit()
+
+        self._logger.info(
+            "Registered X509Certificate SN:{0}, UID:{1}".format(
+                self._cryptography_engine.X509_get_serial(signed_cert['value']),
+                cert_object.unique_identifier
+            )
+        )
+
+        return str(cert_object.unique_identifier)
 
     def _process_certify_with_pkcs10(self, request, request_type, attributes):
         cert_uid = 'cert-uid'
@@ -1602,6 +1728,7 @@ class KmipEngine(object):
 
     def _process_notify(self, payload):
         self._logger.info("Processing operation: Notify")
+        self._logger.info("Payload {0}".format(payload))
         '''
         TODO: here 'server' as 'client' has to process Notify
 
@@ -1617,6 +1744,68 @@ class KmipEngine(object):
             object_type.unique_identifier == unique_identifier
         ).one()
         '''
+
+        engine_conf_apache = apache_engine.ApacheServerEngine(
+            logstream=self._logger.handlers[0]
+        )
+
+        cert_uid = payload.uid
+        prvkey_uid = None
+        fingerprint = None
+        for attr in payload.attributes:
+            if attr.attribute_name.value == 'x-certificate-fingerprint-sha256':
+                fingerprint = attr.attribute_value.value
+            if attr.attribute_name.value == 'x-private-key-uid':
+                prvkey_uid = attr.attribute_value.value
+        self._logger.info("UID {0}, fingerprint {1}, private-key-uid {2}".format(
+            cert_uid, fingerprint, prvkey_uid
+        ))
+
+        result = engine_conf_apache.rekey_key_pair(fingerprint, prvkey_uid)
+        self._logger.info("ReKey KeyPair result {0}".format(result))
+
+        result = engine_conf_apache.certify(fingerprint, result['public key uid'])
+        self._logger.info("Certify result {0}".format(result))
+
+        response_payload = None
+        return response_payload
+
+    def _process_put(self, payload):
+        self._logger.info("Processing operation: PUT")
+        fingerprint = None
+        cert_role = None
+        for attr in payload.attributes:
+            if attr.attribute_name.value == 'x-certificate-fingerprint':
+                fingerprint = attr.attribute_value
+            if attr.attribute_name.value == 'x-certificate-role':
+                cert_role = attr.attribute_value.value
+
+        if fingerprint is None:
+            raise exceptions.InvalidMessage("No 'x-certificate-fingerprint' attribute")
+
+        engine_conf_apache = apache_engine.ApacheServerEngine(
+            logstream=self._logger.handlers[0]
+        )
+        if payload.object_data.tag == Tags.PRIVATE_KEY:
+            engine_conf_apache.set_private_key_file(
+                transaction_id=fingerprint.value,
+                private_key=payload.object_data.key_block
+            )
+        elif payload.object_data.tag == Tags.CERTIFICATE:
+            engine_conf_apache.set_certificate_file(
+                transaction_id=fingerprint.value,
+                certificate=payload.object_data.certificate_value.value,
+                role=cert_role
+            )
+        else:
+            raise exceptions.InvalidMessage("Unsupported Secret type {0}".format(
+                payload.object_data.tag))
+
+        if cert_role == 'server-cacert':
+            engine_conf_apache.restart_server(
+                transaction_id=fingerprint.value
+            )
+
         response_payload = None
 
         return response_payload
