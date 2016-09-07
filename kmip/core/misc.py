@@ -14,6 +14,7 @@
 # under the License.
 
 from kmip.core.enums import KeyFormatType as KeyFormatTypeEnum
+from kmip.core.enums import PutFunction as PutFunctionEnum
 from kmip.core.enums import Tags
 from kmip.core.enums import QueryFunction as QueryFunctionEnum
 
@@ -228,3 +229,19 @@ class KeyFormatType(Enumeration):
         """
         super(KeyFormatType, self).__init__(
             KeyFormatTypeEnum, value, Tags.KEY_FORMAT_TYPE)
+
+
+class PutFunctionType(Enumeration):
+    """
+    An encodeable wrapper for the Put Function enumeration.
+    """
+
+    def __init__(self, value=PutFunctionEnum.NEW):
+        """
+        Construct a PutFunctionType object.
+
+        Args:
+            value (enums.PutFunction): A PutFunction enumeration value
+        """
+        super(PutFunctionType, self).__init__(
+            PutFunctionEnum, value, Tags.PUT_FUNCTION)
