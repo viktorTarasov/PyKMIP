@@ -531,10 +531,10 @@ class CryptographyEngine(api.CryptographicEngine):
                 prefix_num = item.tag & 0x1F
                 if prefix_num in self.GeneralNames:
                     prefix = self.GeneralNames[prefix_num]
-                    if alt_name_type is not None:
-                        if prefix == alt_name_type:
-                            return item.data.decode()
-                    return prefix + ':' + item.data.decode()
+                    if alt_name_type is None:
+                        return prefix + ':' + item.data.decode()
+                    if prefix == alt_name_type:
+                        return item.data.decode()
         return None
 
     def PKCS10_create(self, private_key, attributes):
