@@ -155,7 +155,7 @@ class PKIEngine(api.PKIEngine):
         profile_properties = self.soap_client.service.profile_properties(profile_properties_input)
         return profile_properties
 
-    def retrieve_cert_authorities(self):
+    def retrieve_cert_authorities(self, certificate=None):
         if self.soap_client is None:
             raise PKIConnectionFailure("No connection to PKI Web service")
 

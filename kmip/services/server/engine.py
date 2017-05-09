@@ -58,6 +58,7 @@ from kmip.pie import sqltypes
 from kmip.services.server import policy
 from kmip.services.server.crypto import engine
 from kmip.services.server.pki import engine as pki_engine
+from kmip.services.server.pki import engine_idca as pki_idca_engine
 from kmip.services.server.apache import engine as apache_engine
 
 class KmipEngine(object):
@@ -1411,7 +1412,8 @@ class KmipEngine(object):
         req_blob = self._cryptography_engine.PKCS10_create(
             prvkey.value, attributes)
 
-        pki = pki_engine.PKIEngine()
+        # pki = pki_engine.PKIEngine()
+        pki = pki_idca_engine.IDCAPKIEngine()
         pki.connect()
 
         signed_cert = pki.sign_certificate_request(req_blob)
@@ -1419,7 +1421,7 @@ class KmipEngine(object):
             raise exceptions.KmipError("Failed to sign certificate request")
 
         ca_cert = None
-        ca_certs = pki.retrieve_cert_authorities()
+        ca_certs = pki.retrieve_cert_authorities(certificate=signed_cert)
         for cert in ca_certs:
             subject = re.findall('CN=([\. \w-]+),?', cert['subject'])
             if subject[0] == signed_cert['issuer commonName']:
